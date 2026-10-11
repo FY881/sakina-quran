@@ -7,7 +7,7 @@ adb install -r -g "$APK"
 adb shell appops set $PKG SCHEDULE_EXACT_ALARM allow || true
 adb shell settings put system time_12_24 24 || true
 tap_text() {
-  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml /tmp/ui.xml >/dev/null 2>&1
+  timeout 20 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml /tmp/ui.xml >/dev/null 2>&1
   python3 - "$1" <<'PY'
 import re,sys,subprocess
 x=open('/tmp/ui.xml',encoding='utf-8').read()
@@ -34,7 +34,7 @@ for night in no yes; do
   tap_text "المزيد|More"; shot "${lang}_${m}_05_more"
   tap_text "الرئيسية|Home"; sleep 1
   tap_text "القبلة|Qibla"; shot "${lang}_${m}_06_qibla"
-  adb shell uiautomator dump /sdcard/ui.xml >/dev/null; adb pull /sdcard/ui.xml "shots/${lang}_${m}_ui.xml" >/dev/null
+  timeout 20 adb shell uiautomator dump /sdcard/ui.xml >/dev/null; adb pull /sdcard/ui.xml "shots/${lang}_${m}_ui.xml" >/dev/null
  done
 done
 adb logcat -d -b crash > shots/crash.txt || true
