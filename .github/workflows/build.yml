@@ -37,22 +37,13 @@ jobs:
       - name: Screenshots on emulator
         if: success()
         continue-on-error: true
-        timeout-minutes: 30
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          disable-animations: true
-          emulator-boot-timeout: 900
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot -no-metrics
-          script: timeout 1200 bash ci/shots.sh > emu.log 2>&1 || true
+        timeout-minutes: 35
+        run: timeout 1900 bash ci/emu.sh > emu.log 2>&1 || true
       - name: Publish results to ci-out branch
         if: always()
         run: |
           mkdir -p /tmp/out && cp -r shots /tmp/out/ 2>/dev/null || true
-          cp build.log emu.log /tmp/out/ 2>/dev/null || true
+          cp build.log emu.log emu_run.log /tmp/out/ 2>/dev/null || true
           grep -E "^e: |^w: .*error|FAILED|What went wrong|BUILD|tests completed|> Task .*FAILED" -A3 build.log > /tmp/out/summary.txt 2>/dev/null || true
           find app-src/app/build/test-results -name '*.xml' -exec cp {} /tmp/out/ \; 2>/dev/null || true
           cp app-src/app/build/outputs/apk/debug/*.apk /tmp/out/ 2>/dev/null || true
