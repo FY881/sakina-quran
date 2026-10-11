@@ -1,6 +1,7 @@
 #!/bin/bash
 set -x
-PKG=app.sakina.quran
+PKG=$(aapt2 dump packagename "$(ls app-src/app/build/outputs/apk/debug/*.apk | head -1)" 2>/dev/null || echo app.sakina.quran.debug)
+echo PKG=$PKG
 APK=$(ls app-src/app/build/outputs/apk/debug/*.apk | head -1)
 mkdir -p shots
 adb install -r -g "$APK"
@@ -17,13 +18,14 @@ for t in sys.argv[1].split('|'):
 print('notfound',sys.argv[1])
 PY
 }
-shot() { sleep 3; adb exec-out screencap -p > "shots/$1.png"; }
+dismiss() { timeout 20 adb shell uiautomator dump /sdcard/d.xml >/dev/null 2>&1; adb pull /sdcard/d.xml /tmp/d.xml >/dev/null 2>&1; grep -q "isn.t responding\|لا يستجيب" /tmp/d.xml && { tap_text "Wait|انتظار"; sleep 2; }; }
+shot() { sleep 3; dismiss; adb exec-out screencap -p > "shots/$1.png"; }
 for night in no yes; do
  for lang in ar en; do
   adb shell cmd uimode night $night
   adb shell cmd locale set-app-locales $PKG --locales $lang || true
   adb shell am force-stop $PKG
-  adb shell am start -W -n $PKG/.MainActivity
+  adb shell am start -W -n $PKG/app.sakina.quran.MainActivity
   sleep 6
   m=$([ $night = yes ] && echo dark || echo light)
   shot "${lang}_${m}_01_home"
