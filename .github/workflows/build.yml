@@ -1,0 +1,59 @@
+name: build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: { group: build, cancel-in-progress: true }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reassemble large files
+        run: bash ci/assemble.sh
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.14.3' }
+      - name: CI gradle props
+        working-directory: app-src
+        run: |
+          sed -i 's/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8/; s/^org.gradle.workers.max=.*/org.gradle.workers.max=4/; s/^kotlin.daemon.jvmargs=.*/kotlin.daemon.jvmargs=-Xmx3g/' gradle.properties
+          rm -f local.properties
+      - name: Build + unit tests
+        id: gradle
+        working-directory: app-src
+        run: |
+          set -o pipefail
+          gradle --no-daemon --console=plain testDebugUnitTest assembleDebug 2>&1 | tee ../build.log
+      - name: Enable KVM
+        if: success()
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Screenshots on emulator
+        if: success()
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash ci/shots.sh
+      - name: Publish results to ci-out branch
+        if: always()
+        run: |
+          mkdir -p /tmp/out && cp -r shots /tmp/out/ 2>/dev/null || true
+          cp build.log /tmp/out/ 2>/dev/null || true
+          grep -E "^e: |^w: .*error|FAILED|What went wrong|BUILD|tests completed|> Task .*FAILED" -A3 build.log > /tmp/out/summary.txt 2>/dev/null || true
+          find app-src/app/build/test-results -name '*.xml' -exec cp {} /tmp/out/ \; 2>/dev/null || true
+          cp app-src/app/build/outputs/apk/debug/*.apk /tmp/out/ 2>/dev/null || true
+          echo "${{ job.status }} $(date -u)" > /tmp/out/status.txt
+          cd /tmp/out && git init -q && git checkout -q -b ci-out && git add -A
+          git -c user.name=ci -c user.email=ci@local commit -qm "ci ${{ github.sha }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-out
