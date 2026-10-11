@@ -1,0 +1,10 @@
+app-src/app/src/main/assets/cities.tsv 33
+app-src/app/src/main/res/font/amiri_quran.ttf 3
+app-src/app/src/main/res/font/plex_bold.ttf 5
+app-src/app/src/main/res/font/plex_medium.ttf 5
+app-src/app/src/main/res/font/plex_regular.ttf 4
+app-src/app/src/main/res/font/plex_semibold.ttf 5
+app-src/app/src/main/res/raw/adhan_1.ogg 15
+app-src/app/src/main/res/raw/adhan_2.ogg 17
+app-src/app/src/main/res/raw/adhan_3.ogg 11
+app-src/app/src/main/res/raw/takbeer.ogg 2
