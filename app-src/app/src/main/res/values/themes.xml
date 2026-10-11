@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_green">#0E5E4E</color>
+    <color name="brand_bg">#F6F3EA</color>
+    <color name="icon_bg">#0E5E4E</color>
+    <style name="Theme.Sakina" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/brand_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+    <style name="Theme.Sakina.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_green</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Sakina</item>
+    </style>
+</resources>
