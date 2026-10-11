@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">سكينة</string>
+    <string name="tab_home">الرئيسية</string>
+    <string name="tab_quran">القرآن</string>
+    <string name="tab_prayer">الصلاة</string>
+    <string name="tab_azkar">الأذكار</string>
+    <string name="tab_more">المزيد</string>
+    <string name="next_prayer">الصلاة القادمة</string>
+    <string name="remaining">باقي %1$s</string>
+    <string name="today_times">مواقيت اليوم</string>
+    <string name="fajr">الفجر</string>
+    <string name="sunrise">الشروق</string>
+    <string name="dhuhr">الظهر</string>
+    <string name="jumuah">الجمعة</string>
+    <string name="asr">العصر</string>
+    <string name="maghrib">المغرب</string>
+    <string name="isha">العشاء</string>
+    <string name="location_default">القاهرة، مصر (افتراضي)</string>
+    <string name="method_egypt">الهيئة المصرية العامة للمساحة</string>
+    <string name="coming_soon">قريبًا بإذن الله</string>
+    <string name="coming_soon_desc">هذا القسم قيد البناء وسيصل في التحديث القادم.</string>
+    <string name="settings">الإعدادات</string>
+    <string name="theme">المظهر</string>
+    <string name="theme_system">حسب النظام</string>
+    <string name="theme_light">فاتح</string>
+    <string name="theme_dark">داكن</string>
+    <string name="language">اللغة</string>
+    <string name="lang_ar">العربية</string>
+    <string name="lang_en">English</string>
+    <string name="about">عن التطبيق</string>
+    <string name="about_desc">سكينة تطبيق مجاني بالكامل، بلا إعلانات ولا اشتراكات ولا جمع بيانات. صدقة جارية.</string>
+    <string name="sources">المصادر والتراخيص</string>
+    <string name="sources_desc">نص المصحف: مشروع تنزيل (tanzil.net) بترخيص CC BY 3.0 دون أي تعديل.\nخط المصحف: Amiri Quran (SIL OFL).\nحساب المواقيت: مكتبة Adhan من Batoul Apps (MIT).\nخط الواجهة: IBM Plex Sans Arabic (SIL OFL).</string>
+    <string name="version">الإصدار %1$s</string>
+    <string name="greeting">السلام عليكم</string>
+    <string name="quick_quran">المصحف</string>
+    <string name="quick_qibla">القبلة</string>
+    <string name="quick_tasbih">السبحة</string>
+    <string name="quick_azkar">الأذكار</string>
+    <string name="hours_minutes">%1$d س %2$d د</string>
+    <string name="minutes_only">%1$d دقيقة</string>
+    <string name="free_badge">مجاني للأبد • بلا إعلانات</string>
+    <string name="widget_desc">الصلاة القادمة مع عدّاد تنازلي ومواقيت اليوم</string>
+</resources>
