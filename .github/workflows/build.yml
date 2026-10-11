@@ -36,20 +36,12 @@ jobs:
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
       - name: Screenshots on emulator
         if: success()
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: bash ci/shots.sh
+        run: bash ci/emu.sh 2>&1 | tee emu.log
       - name: Publish results to ci-out branch
         if: always()
         run: |
           mkdir -p /tmp/out && cp -r shots /tmp/out/ 2>/dev/null || true
-          cp build.log /tmp/out/ 2>/dev/null || true
+          cp build.log emu.log /tmp/out/ 2>/dev/null || true
           grep -E "^e: |^w: .*error|FAILED|What went wrong|BUILD|tests completed|> Task .*FAILED" -A3 build.log > /tmp/out/summary.txt 2>/dev/null || true
           find app-src/app/build/test-results -name '*.xml' -exec cp {} /tmp/out/ \; 2>/dev/null || true
           cp app-src/app/build/outputs/apk/debug/*.apk /tmp/out/ 2>/dev/null || true
