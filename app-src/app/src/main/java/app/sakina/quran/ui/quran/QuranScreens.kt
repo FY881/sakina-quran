@@ -169,7 +169,7 @@ fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
             }
         }
         when (tab) {
-            0 -> items(quran.suras, key = { it.index }) { s -> SuraRow(s, ar) { onOpen("reader/${s.index}/1") } }
+            0 -> items(quran.suras, key = { it.index }) { s -> SuraRow(s, ar, { quran.page(it.index, 1) }) { onOpen("reader/${s.index}/1") } }
             1 -> items((1..30).toList(), key = { "j$it" }) { j ->
                 val start = quran.juzStart(j)
                 SCard(onClick = { onOpen("reader/${start.first}/${start.second}") }, padding = PaddingValues(12.dp)) {
@@ -206,7 +206,7 @@ fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
 }
 
 @Composable
-private fun SuraRow(s: Sura, ar: Boolean, onClick: () -> Unit) {
+private fun SuraRow(s: Sura, ar: Boolean, quranPage: (Sura) -> Int, onClick: () -> Unit) {
     SCard(onClick = onClick, padding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SuraBadge(s.index); Spacer(Modifier.width(12.dp))
@@ -217,7 +217,7 @@ private fun SuraRow(s: Sura, ar: Boolean, onClick: () -> Unit) {
                     else "${s.ename} • ${if (s.meccan) "Makki" else "Madani"} • ${s.ayas} ayat",
                 )
             }
-            Text(s.name, fontFamily = QuranFont, fontSize = 22.sp, color = LocalSakina.current.look.onCard)
+            if (ar) Muted("ص ${num(quranPage(s), true)}") else Text(s.name, fontFamily = QuranFont, fontSize = 22.sp, color = LocalSakina.current.look.onCard)
         }
     }
 }
@@ -264,15 +264,14 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
                         Muted(if (ar) "${if (s.meccan) "مكية" else "مدنية"} • ${num(s.ayas, true)} آية • ترتيبها ${num(s.index, true)}" else "${s.tname} · ${s.ename} · ${if (s.meccan) "Makki" else "Madani"} · ${s.ayas} ayat")
                         if (s.index != 1 && s.index != 9) {
                             VSpace(10.dp)
-                            Text(Quran.BASMALA, fontFamily = QuranFont, fontSize = (size + 2).sp, lineHeight = ((size + 2) * 1.9).sp, color = look.onCard, textAlign = TextAlign.Center)
+                            Text(quran.basmala, fontFamily = QuranFont, fontSize = (size + 2).sp, lineHeight = ((size + 2) * 1.9).sp, color = look.onCard, textAlign = TextAlign.Center)
                         }
                     }
                 }
             }
             items(s.ayas, key = { it }) { i ->
                 val a = i + 1
-                var txt = quran.ayah(sura, a)
-                if (a == 1 && s.index != 1 && txt.startsWith(Quran.BASMALA)) txt = txt.removePrefix(Quran.BASMALA).trimStart()
+                val txt = quran.displayAyah(sura, a)
                 val marked = "$sura:$a" in user.quranBookmarks
                 val isLast = user.lastSura == sura && user.lastAyah == a
                 SCard(padding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 8.dp), tint = if (isLast) androidx.compose.ui.graphics.lerp(look.card, look.cta, .16f) else null) {
