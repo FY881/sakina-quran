@@ -42,6 +42,7 @@ for lang in ar en; do
 done
 # one light-mode Home for comparison
 launch ar home LIGHT; shot "ar_light_01_home"
+launch en prayers LIGHT; shot "en_light_03_prayers"
 launch ar explore DARK; shot "ar_dark_05_explore"
 timeout 20 adb shell uiautomator dump /sdcard/ui.xml >/dev/null; adb pull /sdcard/ui.xml "shots/last_ui.xml" >/dev/null
 adb logcat -d -b crash > shots/crash.txt || true
