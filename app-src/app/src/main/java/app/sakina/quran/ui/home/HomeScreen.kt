@@ -29,6 +29,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +53,8 @@ import app.sakina.quran.prayer.NextPrayer
 import app.sakina.quran.prayer.Prayer
 import app.sakina.quran.prayer.PrayerEngine
 import app.sakina.quran.ui.common.countdown
+import app.sakina.quran.ui.common.hms
+import app.sakina.quran.ui.common.modeLabel
 import app.sakina.quran.ui.common.digits
 import app.sakina.quran.ui.common.formatTime
 import app.sakina.quran.ui.common.isArabic
@@ -110,8 +116,10 @@ private val STORIES = listOf(
 @Composable
 fun HomeScreen(
     prefs: Prefs, user: UserData, onOpen: (String) -> Unit,
-    onDismissHealth: (String) -> Unit, onSeenStory: (String) -> Unit, fixedNow: ZonedDateTime? = null,
+    onDismissHealth: (String) -> Unit, onSeenStory: (String) -> Unit, onSetFeatures: (List<String>) -> Unit = {}, fixedNow: ZonedDateTime? = null,
 ) {
+    var editFeatures by rememberSaveable { mutableStateOf(false) }
+    if (editFeatures) FeatureEditorSheet(user.features, onDismiss = { editFeatures = false }, onSave = onSetFeatures)
     val now = fixedNow ?: rememberNow()
     val ctx = LocalContext.current
     val look = LocalSakina.current.look
@@ -133,7 +141,10 @@ fun HomeScreen(
         // ── Top bar: profile · Hijri date · bell · stars
         item {
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 16.dp, end = 16.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(42.dp).surface(CircleShape).press { onOpen("more") }, contentAlignment = Alignment.Center) { PackIcon(Ico.PROFILE, 28.dp) }
+                Box(Modifier.size(42.dp).surface(CircleShape).press { onOpen("profile") }, contentAlignment = Alignment.Center) {
+                    val initial = user.name.trim().firstOrNull()?.uppercase()
+                    if (initial != null) Text(initial, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) else PackIcon(Ico.PROFILE, 28.dp)
+                }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(hijri, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
@@ -194,14 +205,19 @@ fun HomeScreen(
         item {
             Row(Modifier.padding(horizontal = 16.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 val curAt = PrayerEngine.day(place, next.previous.toLocalDate(), prefs.calc).times[cur] ?: next.previous
+                val total = Duration.between(curAt, next.at).seconds.coerceAtLeast(1)
+                val elapsed = Duration.between(curAt, now).seconds.coerceIn(0, total)
                 PrayerMiniCard(
                     Modifier.weight(1f).fillMaxHeight(), label = t("الآن", "Now"), live = true,
                     name = prayerName(cur), time = formatTime(curAt, ar), ico = cur.ico(), extra = null,
+                    progress = elapsed.toFloat() / total,
+                    footer = t("الأذان التالي بعد ", "Next adhan in ") + hms(Duration.between(now, next.at), ar),
                 ) { onOpen("prayers") }
                 PrayerMiniCard(
                     Modifier.weight(1f).fillMaxHeight(), label = t("التالي", "Next"), live = false,
                     name = prayerName(next.prayer, friday), time = formatTime(next.at, ar), ico = next.prayer.ico(),
                     extra = t("بعد ", "in ") + countdown(Duration.between(now, next.at), ar),
+                    footer = modeLabel(prefs.modes[next.prayer] ?: app.sakina.quran.data.AlertMode.ADHAN),
                 ) { onOpen("prayers") }
             }
         }
@@ -229,7 +245,9 @@ fun HomeScreen(
         // ── Features (user-editable order)
         item {
             SectionHeader(t("المميزات", "Features"), Modifier.padding(horizontal = 12.dp)) {
-                Icon(Icons.Outlined.Edit, t("تعديل", "Edit"), tint = look.onCardMuted, modifier = Modifier.size(20.dp))
+                Box(Modifier.size(36.dp).clip(CircleShape).press { editFeatures = true }, contentAlignment = Alignment.Center) {
+                    Icon(Icons.Outlined.Edit, t("تعديل", "Edit"), tint = look.onCardMuted, modifier = Modifier.size(20.dp))
+                }
                 Spacer(Modifier.width(10.dp))
                 Chip(t("المزيد", "More"), onClick = { onOpen("explore") })
             }
@@ -262,7 +280,10 @@ fun HomeScreen(
 }
 
 @Composable
-private fun PrayerMiniCard(modifier: Modifier, label: String, live: Boolean, name: String, time: String, ico: Ico, extra: String?, onClick: () -> Unit) {
+private fun PrayerMiniCard(
+    modifier: Modifier, label: String, live: Boolean, name: String, time: String, ico: Ico, extra: String?,
+    progress: Float? = null, footer: String? = null, onClick: () -> Unit,
+) {
     val look = LocalSakina.current.look
     SCard(modifier, onClick = onClick, padding = PaddingValues(14.dp)) {
         Row(verticalAlignment = Alignment.Top) {
@@ -278,5 +299,12 @@ private fun PrayerMiniCard(modifier: Modifier, label: String, live: Boolean, nam
             PackIcon(ico, 40.dp)
         }
         if (extra != null) { VSpace(4.dp); Text(extra, style = MaterialTheme.typography.labelLarge, color = look.cta, maxLines = 1) }
+        if (progress != null) {
+            VSpace(8.dp)
+            Box(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(look.onCardMuted.copy(alpha = .2f))) {
+                Box(Modifier.fillMaxWidth(progress.coerceIn(.02f, 1f)).height(6.dp).clip(CircleShape).background(look.cta))
+            }
+        }
+        if (footer != null) { Spacer(Modifier.weight(1f)); VSpace(4.dp); Text(footer, style = MaterialTheme.typography.labelMedium, color = look.onCardMuted, maxLines = 1) }
     }
 }
