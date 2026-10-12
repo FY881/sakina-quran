@@ -240,7 +240,7 @@ fun BackHeader(title: String, onBack: () -> Unit, subtitle: String? = null, trai
         }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = l.onCardMuted, maxLines = 1)
+            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = l.onCardMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         trailing?.invoke(this)
     }
