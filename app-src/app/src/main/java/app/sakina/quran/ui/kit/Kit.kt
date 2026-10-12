@@ -26,7 +26,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -222,3 +226,22 @@ fun Badge(text: String, bg: Color, fg: Color, modifier: Modifier = Modifier, dot
 
 @Composable
 fun VSpace(h: Dp) = Spacer(Modifier.height(h))
+
+/** Screen header for pushed screens: back arrow, title (+ optional subtitle) and trailing actions. */
+@Composable
+fun BackHeader(title: String, onBack: () -> Unit, subtitle: String? = null, trailing: (@Composable RowScope.() -> Unit)? = null) {
+    val l = LocalSakina.current.look
+    Row(
+        Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(start = 4.dp, end = 10.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        androidx.compose.material3.IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, null, tint = MaterialTheme.colorScheme.onBackground)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = l.onCardMuted, maxLines = 1)
+        }
+        trailing?.invoke(this)
+    }
+}
