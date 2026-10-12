@@ -1,5 +1,7 @@
 package app.sakina.quran.ui.dhikr
 
+import kotlin.random.Random
+
 /** One of the 99 Beautiful Names (the widely used list based on the narration of at-Tirmidhi). */
 data class Name(val n: Int, val ar: String, val tr: String, val en: String, val meaningAr: String)
 
@@ -104,3 +106,17 @@ val NAMES_99: List<Name> = listOf(
     Name(98, "الرَّشِيد", "Ar-Rashid", "The Guide to the Right Path", "الذي يرشد الخلق إلى مصالحهم"),
     Name(99, "الصَّبُور", "As-Sabur", "The Most Patient", "الذي لا يعاجل العصاة بالعقوبة"),
 )
+
+/** One quiz question. kind 0 = name → meaning, 1 = meaning → name. */
+data class QuizQ(val answer: Int, val options: List<Int>, val kind: Int)
+
+/** Deterministic quiz generator (unit-tested): [n] questions, 4 distinct options each, answer among them. */
+fun makeNamesQuiz(seed: Long, n: Int = 10, mode: Int = 2): List<QuizQ> {
+    val r = Random(seed)
+    val picks = NAMES_99.indices.shuffled(r).take(n)
+    return picks.map { a ->
+        val opts = (listOf(a) + NAMES_99.indices.filter { it != a }.shuffled(r).take(3)).shuffled(r)
+        QuizQ(a, opts, if (mode == 2) r.nextInt(2) else mode)
+    }
+}
+
