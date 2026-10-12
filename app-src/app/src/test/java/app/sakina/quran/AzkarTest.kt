@@ -10,6 +10,7 @@ import app.sakina.quran.prayer.Prayer
 import app.sakina.quran.prayer.PrayerEngine
 import app.sakina.quran.ui.dhikr.NAMES_99
 import app.sakina.quran.ui.dhikr.makeNamesQuiz
+import app.sakina.quran.ui.dhikr.fatimahStage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -92,7 +93,7 @@ class AzkarTest {
         assertEquals("Once", app.sakina.quran.ui.azkar.countLabel(1, false))
         assertEquals("1 dua", app.sakina.quran.ui.azkar.duasLabel(1, false))
         assertEquals("٤ أدعية", app.sakina.quran.ui.azkar.duasLabel(4, true))
-        val f = app.sakina.quran.ui.dhikr::fatimahStage
+        val f: (Int) -> Triple<app.sakina.quran.ui.dhikr.TasbihPreset, Int, Int> = { fatimahStage(it) }
         assertEquals("subhan", f(0).first.id); assertEquals(32, f(32).second)
         assertEquals("hamd", f(33).first.id); assertEquals(0, f(33).second)
         assertEquals("akbar", f(66).first.id); assertEquals(34, f(99).third)
