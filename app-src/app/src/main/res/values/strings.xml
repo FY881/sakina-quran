@@ -31,7 +31,7 @@
     <string name="about">عن التطبيق</string>
     <string name="about_desc">سكينة تطبيق مجاني بالكامل، بلا إعلانات ولا اشتراكات ولا جمع بيانات. صدقة جارية.</string>
     <string name="sources">المصادر والتراخيص</string>
-    <string name="sources_desc">نص المصحف: مشروع تنزيل (tanzil.net) بترخيص CC BY 3.0 دون أي تعديل.\nخط المصحف: Amiri Quran (SIL OFL).\nحساب المواقيت: مكتبة Adhan من Batoul Apps (MIT).\nخط الواجهة: IBM Plex Sans Arabic (SIL OFL).</string>
+    <string name="sources_desc">نص المصحف: Tanzil Project «مشروع تنزيل» — Tanzil Quran Text (Uthmani 1.1) © 2007-2026 Tanzil Project، بترخيص CC BY 3.0، منقول حرفيًا دون أي تعديل. التحديثات: https://tanzil.net/updates/\nبيانات السور والأجزاء والصفحات: Tanzil Project.\nأسماء الله الحسنى: القائمة المشهورة برواية الترمذي، والمعاني بصياغة سكينة.\nخط المصحف: Amiri Quran (SIL OFL).\nحساب المواقيت: مكتبة Adhan من Batoul Apps (MIT).\nخط الواجهة: IBM Plex Sans Arabic (SIL OFL).</string>
     <string name="version">الإصدار %1$s</string>
     <string name="greeting">السلام عليكم</string>
     <string name="quick_quran">المصحف</string>
