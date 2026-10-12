@@ -269,7 +269,7 @@ fun HomeScreen(
             SCard(Modifier.padding(horizontal = 16.dp), padding = PaddingValues(6.dp)) {
                 val prayedToday = user.prayedOn(localDate)
                 ListRow(Ico.TRACKER, t("متتبع الصلاة", "Prayer tracker"), digits(t("صلّيت $prayedToday من ٥ اليوم", "$prayedToday of 5 prayed today"), ar), onClick = { onOpen("prayers") })
-                ListRow(Ico.AZKAR, t(if (now.hour < 12) "أذكار الصباح" else "أذكار المساء", if (now.hour < 12) "Morning azkar" else "Evening azkar"), t("دقائق تطمئن بها", "A few calm minutes"), onClick = { feature("azkar")?.let(openFeature) })
+                ListRow(Ico.AZKAR, t(if (now.hour < 12) "أذكار الصباح" else "أذكار المساء", if (now.hour < 12) "Morning azkar" else "Evening azkar"), t("دقائق تطمئن بها", "A few calm minutes"), onClick = { onOpen(if (now.hour < 12) "azkar/morning" else "azkar/evening") })
                 ListRow(Ico.KHATMA, t("خطة ختمة", "Khatma plan"), t("اقرأ وردك اليومي", "Read your daily portion"), onClick = { onOpen("quran") })
             }
         }
