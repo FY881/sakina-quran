@@ -40,55 +40,37 @@ for m in re.finditer(r'<node [^>]*?text="([^"]*)"[^>]*?bounds="\[(\d+),(\d+)\]\[
 else: print('notfound',t)
 PY
 }
+crashdump() { adb logcat -d -b crash > shots/crash.txt 2>/dev/null || true; }
+snap() { adb exec-out screencap -p > "shots/$1.png"; }
 for lang in ar en; do
   adb shell cmd locale set-app-locales $PKG --locales $lang || true
   m=dark
-  launch $lang home DARK;              shot "${lang}_${m}_01_home"
   launch $lang azkar DARK;             shot "${lang}_${m}_a01_azkar"
-  adb shell input swipe 540 1900 540 500 400; sleep 1; shot "${lang}_${m}_a02_azkar_scrolled"
-  adb shell input swipe 540 1900 540 300 400; sleep 1; shot "${lang}_${m}_a03_azkar_reminders"
-  launch $lang "azkar/morning" DARK
-  adb shell input tap 540 1000; sleep 1; shot "${lang}_${m}_a04_session_morning"
+  adb shell input swipe 540 1900 540 300 600; sleep 2; shot "${lang}_${m}_a03_azkar_reminders"
   launch $lang "azkar/morning@3" DARK
   adb shell input tap 540 1000; sleep 1; shot "${lang}_${m}_a05_session_counted"
   launch $lang "azkar/sleep@7" DARK;   shot "${lang}_${m}_a06_session_sleep33"
-  launch $lang hisn DARK;              shot "${lang}_${m}_a07_hisn"
   launch $lang "hisn?cat=SICK" DARK;   shot "${lang}_${m}_a08_hisn_sick"
-  launch $lang "azkar_search?q=%D8%A7%D9%84%D8%B3%D9%81%D8%B1" DARK; shot "${lang}_${m}_a09_search"
   launch $lang duas DARK;              shot "${lang}_${m}_a10_duas_quran"
   launch $lang "duas?tab=1" DARK;      shot "${lang}_${m}_a11_duas_prophetic"
   launch $lang ruqyah DARK;            shot "${lang}_${m}_a12_ruqyah"
-  launch $lang istikhara DARK;         shot "${lang}_${m}_a13_istikhara"
-  launch $lang names_quiz DARK;        shot "${lang}_${m}_a14_quiz_start"
+  launch $lang istikhara DARK
+  adb shell input swipe 540 1900 540 500 600; sleep 2; shot "${lang}_${m}_a13_istikhara_dua"
+  launch $lang names_quiz DARK
   if [ $lang = ar ]; then tap_text "ابدأ الاختبار"; else tap_text "Start the quiz"; fi
-  sleep 2; shot "${lang}_${m}_a15_quiz_question"
-  adb shell input tap 540 1500; sleep 0.4; shot "${lang}_${m}_a16_quiz_answered"
+  sleep 2; adb shell input tap 540 1350; sleep 0.3; snap "${lang}_${m}_a16_quiz_answered"
   launch $lang tasbih DARK
-  for i in 1 2 3 4 5 6 7; do adb shell input tap 540 1000; done
-  shot "${lang}_${m}_a17_tasbih"
-  adb shell input swipe 540 1900 540 400 400; sleep 1; shot "${lang}_${m}_a18_tasbih_chart"
-  adb shell input swipe 540 1900 540 400 400; sleep 1; shot "${lang}_${m}_a19_tasbih_options"
+  adb shell input swipe 540 1900 540 400 600; sleep 1; adb shell input swipe 540 1900 540 700 600; sleep 2; shot "${lang}_${m}_a19_tasbih_options"
   launch $lang azkar_mine DARK;        shot "${lang}_${m}_a20_mine"
   if [ $lang = ar ]; then q='%D8%A7%D8%B0%D9%83%D8%A7%D8%B1'; else q='azkar'; fi
   launch $lang "explore?q=$q" DARK;    shot "${lang}_${m}_a21_explore_azkar"
-  launch $lang names DARK;             shot "${lang}_${m}_a22_names"
-done
-# Regression pass on earlier screens (AR + EN dark)
-for lang in ar en; do
-  adb shell cmd locale set-app-locales $PKG --locales $lang || true
-  launch $lang prayers DARK;            shot "${lang}_dark_r02_prayers"
-  launch $lang explore DARK;            shot "${lang}_dark_r03_explore"
-  launch $lang quran DARK;              shot "${lang}_dark_r13_quran_index"
-  launch $lang "reader/2/1" DARK;       shot "${lang}_dark_r14_quran_reader"
-  launch $lang onboarding DARK false;   shot "${lang}_dark_r07_onboarding"
-  launch $lang profile DARK;            shot "${lang}_dark_r09_profile"
+  crashdump
 done
 adb shell cmd locale set-app-locales $PKG --locales ar || true
-launch ar azkar LIGHT;          shot "ar_light_a01_azkar"
 launch ar "azkar/evening" LIGHT; shot "ar_light_a04_session_evening"
-launch ar duas LIGHT;           shot "ar_light_a10_duas"
-launch ar tasbih LIGHT;         shot "ar_light_a17_tasbih"
-launch ar ruqyah LIGHT;         shot "ar_light_a12_ruqyah"
-timeout 20 adb shell uiautomator dump /sdcard/ui.xml >/dev/null; adb pull /sdcard/ui.xml "shots/last_ui.xml" >/dev/null
-adb logcat -d -b crash > shots/crash.txt || true
-adb logcat -d | grep -i "sakina\|AndroidRuntime" | tail -300 > shots/logcat.txt || true
+launch ar tasbih LIGHT;          shot "ar_light_a17_tasbih"
+launch ar ruqyah LIGHT;          shot "ar_light_a12_ruqyah"
+launch ar profile DARK;          shot "ar_dark_r09_profile"
+launch ar home DARK;             shot "ar_dark_r01_home"
+crashdump
+adb logcat -d | grep -i "sakina\|AndroidRuntime\|FATAL" | tail -300 > shots/logcat.txt || true
