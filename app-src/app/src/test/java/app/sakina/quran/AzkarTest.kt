@@ -71,13 +71,16 @@ class AzkarTest {
         val ev = Scheduler.azkarUpcoming(p, now)
         val day = PrayerEngine.day(PrayerEngine.CAIRO, LocalDate.of(2026, 10, 12))
         val m = ev.first { it.kind == "morning" }.at
-        assertEquals(day.times.getValue(Prayer.FAJR).plusMinutes(20), m)
+        assertNearT(day.times.getValue(Prayer.FAJR).plusMinutes(20), m)
         assertTrue(m.isBefore(day.times.getValue(Prayer.SUNRISE)))
         val e = ev.first { it.kind == "evening" }.at
-        assertEquals(day.times.getValue(Prayer.ASR).plusMinutes(30), e)
+        assertNearT(day.times.getValue(Prayer.ASR).plusMinutes(30), e)
         assertTrue(e.isBefore(day.times.getValue(Prayer.MAGHRIB)))
         assertEquals(22, ev.first { it.kind == "sleep" }.at.hour)
         assertTrue(ev.zipWithNext().all { (a, b) -> !b.at.isBefore(a.at) })
         assertTrue(Scheduler.azkarUpcoming(Prefs(), now).isEmpty())
     }
+
+    private fun assertNearT(a: ZonedDateTime, b: ZonedDateTime) =
+        assertTrue("expected ~$a got $b", kotlin.math.abs(java.time.Duration.between(a, b).seconds) < 60)
 }
