@@ -164,7 +164,7 @@ fun PrayerScreen(
         item {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Chip(place.label(ar), leading = { PackIcon(Ico.LOCATION, 18.dp) }, onClick = onCity)
-                Chip(if (ar) prefs.calc.method.ar else prefs.calc.method.en, leading = { PackIcon(Ico.SETTINGS, 18.dp) }, onClick = onSettings)
+                Chip(prefs.calc.method.short(ar), leading = { PackIcon(Ico.SETTINGS, 18.dp) }, onClick = onSettings)
             }
         }
         // ── Progress ring + current / next
