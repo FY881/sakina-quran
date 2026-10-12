@@ -1,4 +1,6 @@
 app-src/app/src/main/assets/cities.tsv 33
+app-src/app/src/main/assets/quran/quran-data.xml 2
+app-src/app/src/main/assets/quran/quran-uthmani.txt 24
 app-src/app/src/main/res/font/amiri_quran.ttf 3
 app-src/app/src/main/res/font/plex_bold.ttf 5
 app-src/app/src/main/res/font/plex_medium.ttf 5
