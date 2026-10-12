@@ -24,4 +24,16 @@ object Texts {
     fun before(c: Context, p: Prayer, min: Int, friday: Boolean) =
         if (ar(c)) "باقي $min دقيقة على ${name(c, p, friday)}" else "${name(c, p, friday)} in $min min"
     fun stop(c: Context) = if (ar(c)) "إيقاف الأذان" else "Stop adhan"
+    fun azkarTitle(c: Context, kind: String) = if (ar(c)) when (kind) {
+        "morning" -> "أذكار الصباح"; "evening" -> "أذكار المساء"; else -> "أذكار النوم"
+    } else when (kind) { "morning" -> "Morning azkar"; "evening" -> "Evening azkar"; else -> "Azkar before sleep" }
+    fun azkarText(c: Context, kind: String) = if (ar(c)) when (kind) {
+        "morning" -> "ابدأ يومك بذكر الله — دقائق قليلة تحفظك بإذن الله"
+        "evening" -> "حان وقت أذكار المساء — اضغط لتبدأ بالعدّاد"
+        else -> "اختم يومك بأذكار النوم وآية الكرسي"
+    } else when (kind) {
+        "morning" -> "Start your day remembering Allah — a few protective minutes"
+        "evening" -> "Time for the evening azkar — tap to start with the counter"
+        else -> "End your day with the sleep azkar and Ayat al-Kursi"
+    }
 }
