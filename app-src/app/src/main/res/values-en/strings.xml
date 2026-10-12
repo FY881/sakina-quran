@@ -31,7 +31,7 @@
     <string name="about">About</string>
     <string name="about_desc">Sakina is completely free: no ads, no subscriptions, no data collection. A sadaqah jariyah.</string>
     <string name="sources">Sources &amp; licenses</string>
-    <string name="sources_desc">Quran text: Tanzil Project — Tanzil Quran Text (Uthmani 1.1) © 2007-2026 Tanzil Project, CC BY 3.0, reproduced verbatim without any change. Updates: https://tanzil.net/updates/\nSurah, juz and page metadata: Tanzil Project.\n99 Names: the widely used list per at-Tirmidhi; meanings written by Sakina.\nQuran font: Amiri Quran (SIL OFL).\nPrayer times: Adhan library by Batoul Apps (MIT).\nUI font: IBM Plex Sans Arabic (SIL OFL).</string>
+    <string name="sources_desc">Quran text: Tanzil Project — Tanzil Quran Text (Uthmani 1.1) © 2007-2026 Tanzil Project, CC BY 3.0, reproduced verbatim without any change. Updates: https://tanzil.net/updates/\nSurah, juz and page metadata: Tanzil Project.\n99 Names: the widely used list per at-Tirmidhi; meanings written by Sakina.\nQuran font: Amiri Quran (SIL OFL).\nPrayer times: Adhan library by Batoul Apps (MIT).\nUI font: IBM Plex Sans Arabic (SIL OFL).\nAzkar &amp; Hisn al-Muslim: asellam/HisnElMuslim (© 2021 Abdellah SELLAM, MIT) and Seen-Arabic/Morning-And-Evening-Adhkar-DB (© 2024 Seen Arabic, MIT); Arabic text reproduced unchanged. The book “Hisn al-Muslim” by Sa\'id ibn Ali ibn Wahf al-Qahtani. Ruqyah ayat and Quranic duas use the Tanzil text. Mu\'awwidhat audio streamed from mp3quran.net.</string>
     <string name="version">Version %1$s</string>
     <string name="greeting">Assalamu alaikum</string>
     <string name="quick_quran">Mushaf</string>
