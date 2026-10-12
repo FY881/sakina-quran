@@ -19,6 +19,17 @@ class Quran(val suras: List<Sura>, val text: Array<String>, private val pages: I
     fun page(sura: Int, ayah: Int): Int { val g = global(sura, ayah); var p = pages.indexOfLast { it <= g }; if (p < 0) p = 0; return p + 1 }
     fun juz(sura: Int, ayah: Int): Int { val g = global(sura, ayah); return juzStarts.indexOfLast { it <= g }.coerceAtLeast(0) + 1 }
 
+    /** Basmala exactly as Tanzil writes it (ayah 1:1). */
+    val basmala: String get() = text[0]
+
+    /** Ayah text for display: ayah 1 of surahs other than 1 and 9 carries the basmala prefix in Tanzil; it is shown as a header instead. */
+    fun displayAyah(sura: Int, ayah: Int): String {
+        val t = ayah(sura, ayah)
+        if (ayah != 1 || sura == 1 || sura == 9) return t
+        val w = t.split(' ')
+        return if (w.size > 4 && normalize(w.take(4).joinToString(" ")).replace("\u0651", "") == normalize(basmala).replace("\u0651", "")) w.drop(4).joinToString(" ") else t
+    }
+
     fun fromGlobal(g: Int): Pair<Int, Int> { val s = suras.last { it.start <= g }; return s.index to (g - s.start + 1) }
     fun juzStart(j: Int): Pair<Int, Int> = fromGlobal(juzStarts[(j - 1).coerceIn(0, juzStarts.size - 1)])
 
@@ -37,9 +48,6 @@ class Quran(val suras: List<Sura>, val text: Array<String>, private val pages: I
     }
 
     companion object {
-        /** Basmala exactly as it prefixes ayah 1 in the Tanzil text (display only; the asset is never changed). */
-        const val BASMALA = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ"
-
         @Volatile private var cached: Quran? = null
         private val lock = Mutex()
 
