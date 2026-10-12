@@ -254,7 +254,7 @@ fun TasbihScreen(
                             if (vals[i] > 0) Text(num(vals[i], ar), style = MaterialTheme.typography.labelSmall, color = look.onCardMuted, maxLines = 1)
                             Box(Modifier.fillMaxWidth().height((80f * vals[i] / max).coerceAtLeast(3f).dp).clip(RoundedCornerShape(6.dp)).background(if (d == today) look.cta else look.cta.copy(alpha = .45f)))
                             VSpace(4.dp)
-                            Text(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, locale(ar)), style = MaterialTheme.typography.labelSmall, color = look.onCardMuted, maxLines = 1)
+                            Text(if (ar) "نثرخجسح"[d.dayOfWeek.value - 1].toString() else d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale(false)).take(2), style = MaterialTheme.typography.labelSmall, color = look.onCardMuted, maxLines = 1)
                         }
                     }
                 }
@@ -271,14 +271,14 @@ fun TasbihScreen(
                 VSpace(6.dp)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(t("صوت نقرة خفيف", "Soft click sound"), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                    Switch(user.tasbihSound, onSound, colors = SwitchDefaults.colors(checkedTrackColor = look.cta, checkedThumbColor = look.onCta))
+                    Switch(user.tasbihSound, onSound, colors = app.sakina.quran.ui.azkar.switchColors())
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(t("العدّ بزر الصوت", "Count with volume keys"), style = MaterialTheme.typography.bodyLarge)
                         Muted(t("تبقى الشاشة مضاءة أثناء التسبيح", "The screen stays on while counting"))
                     }
-                    Switch(user.tasbihVolumeKeys, onVolumeKeys, colors = SwitchDefaults.colors(checkedTrackColor = look.cta, checkedThumbColor = look.onCta))
+                    Switch(user.tasbihVolumeKeys, onVolumeKeys, colors = app.sakina.quran.ui.azkar.switchColors())
                 }
                 VSpace(4.dp)
                 Muted(t("العدّ بالصوت (قول «سبحان الله») قيد التطوير ليعمل على جهازك دون إنترنت.", "Voice counting (saying “SubhanAllah”) is coming, fully on-device."))
