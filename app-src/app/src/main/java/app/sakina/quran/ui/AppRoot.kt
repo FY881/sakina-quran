@@ -64,6 +64,19 @@ import app.sakina.quran.ui.quran.QuranTab
 import app.sakina.quran.ui.quran.QuranReader
 import app.sakina.quran.ui.quran.QuranSearch
 import app.sakina.quran.ui.dhikr.NamesScreen
+import app.sakina.quran.ui.dhikr.NamesQuizScreen
+import app.sakina.quran.ui.azkar.AzkarHome
+import app.sakina.quran.ui.azkar.AzkarSessionScreen
+import app.sakina.quran.ui.azkar.HisnScreen
+import app.sakina.quran.ui.azkar.AzkarSearchScreen
+import app.sakina.quran.ui.azkar.AzkarMineScreen
+import app.sakina.quran.ui.azkar.DuasScreen
+import app.sakina.quran.ui.azkar.RuqyahScreen
+import app.sakina.quran.ui.azkar.IstikharaScreen
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import app.sakina.quran.ui.dhikr.TasbihScreen
 import app.sakina.quran.ui.onboarding.OnboardingScreen
 import app.sakina.quran.ui.profile.IconPackPickerScreen
@@ -85,13 +98,14 @@ enum class Tab(val route: String, val ar: String, val en: String, val icon: Imag
 }
 
 private val KNOWN_ROUTES = Tab.entries.map { it.route }.toSet() +
-    setOf("settings", "city", "qibla", "more", "profile", "themes", "iconpacks", "tasbih", "names", "quran_search", "onboarding")
+    setOf("settings", "city", "qibla", "more", "profile", "themes", "iconpacks", "tasbih", "names", "quran_search", "onboarding",
+        "azkar", "hisn", "duas", "ruqyah", "istikhara", "names_quiz", "azkar_search", "azkar_mine")
 
 /** Routes that hide the bottom bar (immersive / first-run). */
-private fun hidesBar(route: String?) = route == "onboarding" || route?.startsWith("reader/") == true
+private fun hidesBar(route: String?) = route == "onboarding" || route?.startsWith("reader/") == true || route?.startsWith("azkar/") == true
 
 @Composable
-fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String? = null) {
+fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String? = null, openRoute: String? = null, onOpened: () -> Unit = {}) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val current = entry?.destination?.route
@@ -100,6 +114,7 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
     val ctx = LocalContext.current
     val st = LocalSakina.current
     val look = st.look
+    val isAr = app.sakina.quran.ui.common.isArabic()
     LaunchedEffect(prefs) { runCatching { Scheduler.reschedule(ctx.applicationContext, prefs) } }
     val cycle: (Prayer) -> Unit = { p ->
         val m = prefs.modes[p] ?: AlertMode.OFF
@@ -110,8 +125,15 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
             popUpTo(nav.graph.findStartDestination().id) { saveState = true }
             launchSingleTop = true
             restoreState = true
-        } else if (route in KNOWN_ROUTES || route.startsWith("reader/")) nav.navigate(route) { launchSingleTop = true }
+        } else if (route.startsWith("azkar/")) {
+            // "azkar/<sid>@<index>" → session route with optional start index.
+            val sid = route.removePrefix("azkar/").substringBefore('@'); val i = route.substringAfter('@', "0").toIntOrNull() ?: 0
+            nav.navigate("azkar/$sid/$i") { launchSingleTop = true }
+        } else if (route.substringBefore('?') in KNOWN_ROUTES) nav.navigate(route) { launchSingleTop = true }
+        else if (route.startsWith("reader/")) nav.navigate(route) { launchSingleTop = true }
     }
+    LaunchedEffect(openRoute) { if (openRoute != null) { go(openRoute); onOpened() } }
+    val snack = remember { SnackbarHostState() }
     // Debug/CI start route, e.g. "explore?q=zakat", "explore?soon=hajj", "reader/2/255", "onboarding?step=2".
     val baseStart = startRoute?.substringBefore('?')
     val startArgs = remember(startRoute) {
@@ -129,6 +151,7 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
         Box(Modifier.fillMaxSize().hazeSource(st.haze).background(Brush.verticalGradient(listOf(look.bgTop, look.bgBottom))))
         Scaffold(
             containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(snack) },
             contentColor = MaterialTheme.colorScheme.onBackground,
             bottomBar = {
                 if (!hidesBar(current)) NavigationBar(containerColor = look.bgBottom, tonalElevation = 0.dp) {
@@ -164,7 +187,19 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
                 composable(Tab.PRAYERS.route) {
                     PrayerScreen(
                         prefs = prefs, user = userData, onCycleMode = cycle,
-                        onToggle = { d, i -> scope.launch { user.togglePrayed(d, i) } },
+                        onToggle = { d, i ->
+                            val wasPrayed = userData.isPrayed(d, i)
+                            scope.launch { user.togglePrayed(d, i) }
+                            // AZ03: after marking a prayer, offer the after-prayer azkar.
+                            if (!wasPrayed) scope.launch {
+                                snack.currentSnackbarData?.dismiss()
+                                val r = snack.showSnackbar(
+                                    if (isAr) "تقبّل الله — أذكار ما بعد الصلاة؟" else "May Allah accept — after-prayer azkar?",
+                                    actionLabel = if (isAr) "افتح" else "Open", duration = SnackbarDuration.Short,
+                                )
+                                if (r == SnackbarResult.ActionPerformed) go("azkar/after_prayer")
+                            }
+                        },
                         onMarkAll = { d -> scope.launch { user.markAll(d) } },
                         onSettings = { go("settings") }, onCity = { go("city") },
                     )
@@ -193,9 +228,37 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
                         onTap = { scope.launch { user.tasbihTap() } }, onUndo = { scope.launch { user.tasbihUndo() } },
                         onSave = { scope.launch { user.tasbihSave() } }, onPreset = { id, n -> scope.launch { user.tasbihPreset(id, n) } },
                         onTarget = { n -> scope.launch { user.tasbihTarget(n) } }, onClearHistory = { scope.launch { user.clearTasbihHistory() } },
+                        onSkin = { i -> scope.launch { user.setTasbihSkin(i) } }, onSound = { b -> scope.launch { user.setTasbihSound(b) } },
+                        onVolumeKeys = { b -> scope.launch { user.setTasbihVolumeKeys(b) } },
+                        onAddCustom = { txt, n -> scope.launch { user.addTasbihCustom(txt, n) } }, onDeleteCustom = { id -> scope.launch { user.deleteTasbihCustom(id) } },
                     )
                 }
-                composable("names") { NamesScreen(userData, onBack = { nav.popBackStack() }, onFav = { i -> scope.launch { user.toggleNameFav(i) } }, onTasbih = { go("tasbih") }) }
+                composable("names") { NamesScreen(userData, onBack = { nav.popBackStack() }, onFav = { i -> scope.launch { user.toggleNameFav(i) } }, onTasbih = { go("tasbih") }, onQuiz = { go("names_quiz") }) }
+                composable("names_quiz") { NamesQuizScreen(userData, onBack = { nav.popBackStack() }, onResult = { sc, tot -> scope.launch { user.addQuizResult(sc, tot) } }, onNames = { go("names") }) }
+                composable("azkar") { AzkarHome(prefs, repo, userData, onBack = { nav.popBackStack() }, onOpen = ::go) }
+                composable("azkar/{sid}/{i}") { e ->
+                    val sid = e.arguments?.getString("sid") ?: "morning"
+                    val i = e.arguments?.getString("i")?.toIntOrNull() ?: 0
+                    AzkarSessionScreen(
+                        sid, i, userData, onBack = { nav.popBackStack() }, onOpen = ::go,
+                        onProgress = { s2, d -> scope.launch { user.setAzkarProgress(s2, d) } },
+                        onComplete = { s2 -> scope.launch { user.azkarComplete(s2) } },
+                        onFav = { id -> scope.launch { user.toggleAzkarFav(id) } },
+                    )
+                }
+                composable("hisn?cat={cat}", arguments = listOf(androidx.navigation.navArgument("cat") { type = androidx.navigation.NavType.StringType; nullable = true; defaultValue = null })) { e ->
+                    HisnScreen(e.arguments?.getString("cat") ?: startArgs["cat"], onBack = { nav.popBackStack() }, onOpen = ::go)
+                }
+                composable("azkar_search") { AzkarSearchScreen(startArgs["q"] ?: "", onBack = { nav.popBackStack() }, onOpen = ::go) }
+                composable("azkar_mine") {
+                    AzkarMineScreen(
+                        userData, onBack = { nav.popBackStack() }, onOpen = ::go, onFav = { id -> scope.launch { user.toggleAzkarFav(id) } },
+                        onAdd = { txt, n -> scope.launch { user.addOwnAzkar(txt, n) } }, onDelete = { id -> scope.launch { user.deleteOwnAzkar(id) } },
+                    )
+                }
+                composable("duas") { DuasScreen(userData, startArgs["tab"]?.toIntOrNull() ?: 0, onBack = { nav.popBackStack() }, onOpen = ::go, onFav = { id -> scope.launch { user.toggleAzkarFav(id) } }) }
+                composable("ruqyah") { RuqyahScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
+                composable("istikhara") { IstikharaScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
                 composable("quran_search") { QuranSearch(onBack = { nav.popBackStack() }, onOpen = ::go, initial = startArgs["q"] ?: "") }
                 composable("reader/{sura}/{ayah}") { e ->
                     val s = e.arguments?.getString("sura")?.toIntOrNull()?.coerceIn(1, 114) ?: 1
