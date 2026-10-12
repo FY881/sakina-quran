@@ -17,6 +17,11 @@ private val Context.userStore by preferencesDataStore(name = "user")
 
 data class TasbihSession(val at: Long, val preset: String, val count: Int)
 
+data class QuizResult(val at: Long, val score: Int, val total: Int)
+
+/** A dhikr the user wrote (own azkar list, AZ10) or a custom tasbih preset (TS03). */
+data class OwnDhikr(val id: String, val text: String, val count: Int)
+
 data class JournalEntry(val id: Long, val date: LocalDate, val text: String, val mood: Int)
 
 /** Local personal data (works without an account; synced later in wave C1 when signed in). */
@@ -47,7 +52,32 @@ data class UserData(
     val quranBookmarks: Set<String> = emptySet(),
     val namesFav: Set<Int> = emptySet(),
     val avatar: Int = 0,
+    // ── Azkar (A1)
+    /** Favourite dhikr ids (see azkar.Dhikr.id). */
+    val azkarFav: Set<String> = emptySet(),
+    /** Today's per-session progress: sessionId → remaining-count-done per item ("date|sid|c0,c1,…"). */
+    val azkarProgress: Map<String, List<Int>> = emptyMap(),
+    /** Completed sessions "yyyy-MM-dd:sid". */
+    val azkarDone: Set<String> = emptySet(),
+    val ownAzkar: List<OwnDhikr> = emptyList(),
+    val namesQuiz: List<QuizResult> = emptyList(),
+    // ── Tasbih upgrades
+    val tasbihSkin: Int = 0,
+    val tasbihSound: Boolean = false,
+    val tasbihVolumeKeys: Boolean = true,
+    val tasbihCustom: List<OwnDhikr> = emptyList(),
 ) {
+    fun azkarDoneOn(d: LocalDate, sid: String) = "$d:$sid" in azkarDone
+    /** Days (ending today or yesterday) on which the morning or the evening azkar were completed. */
+    fun azkarStreak(today: LocalDate): Int {
+        fun ok(d: LocalDate) = azkarDoneOn(d, "morning") || azkarDoneOn(d, "evening")
+        var d = if (ok(today)) today else today.minusDays(1)
+        var n = 0
+        while (n < 3650 && ok(d)) { n++; d = d.minusDays(1) }
+        return n
+    }
+    fun azkarDaysInWeek(today: LocalDate) = (0..6).count { i -> val d = today.minusDays(i.toLong()); azkarDone.any { it.startsWith("$d:") } }
+
     val lastSura: Int get() = quranLast.substringBefore(':').toIntOrNull() ?: 0
     val lastAyah: Int get() = quranLast.substringAfter(':', "").toIntOrNull() ?: 1
     fun tasbihOn(d: LocalDate): Int {
@@ -96,7 +126,20 @@ class UserRepo(context: Context) {
         val qMarks = stringSetPreferencesKey("qMarks")
         val namesFav = stringSetPreferencesKey("namesFav")
         val avatar = intPreferencesKey("avatar")
+        val azFav = stringSetPreferencesKey("azFav")
+        val azProg = stringSetPreferencesKey("azProg")
+        val azDone = stringSetPreferencesKey("azDone")
+        val azOwn = stringSetPreferencesKey("azOwn")
+        val quiz = stringSetPreferencesKey("namesQuiz")
+        val tSkin = intPreferencesKey("tSkin")
+        val tSound = booleanPreferencesKey("tSound")
+        val tVol = booleanPreferencesKey("tVol")
+        val tCustom = stringSetPreferencesKey("tCustom")
     }
+
+    private fun decodeOwn(s: Set<String>?): List<OwnDhikr> = (s ?: emptySet()).mapNotNull { r ->
+        val x = r.split('\u001F'); if (x.size < 3) null else x[1].toIntOrNull()?.let { OwnDhikr(x[0], x[2], it) }
+    }.sortedBy { it.id }
 
     private fun decodeJournal(s: Set<String>): List<JournalEntry> = s.mapNotNull { raw ->
         val p = raw.split('\u001F')
@@ -126,6 +169,20 @@ class UserRepo(context: Context) {
         quranBookmarks = p[K.qMarks] ?: emptySet(),
         namesFav = (p[K.namesFav] ?: emptySet()).mapNotNull { it.toIntOrNull() }.toSet(),
         avatar = p[K.avatar] ?: 0,
+        azkarFav = p[K.azFav] ?: emptySet(),
+        azkarProgress = (p[K.azProg] ?: emptySet()).mapNotNull { r ->
+            val x = r.split('|'); if (x.size < 3 || x[0] != LocalDate.now().toString()) null
+            else x[1] to x[2].split(',').mapNotNull { it.toIntOrNull() }
+        }.toMap(),
+        azkarDone = p[K.azDone] ?: emptySet(),
+        ownAzkar = decodeOwn(p[K.azOwn]),
+        namesQuiz = (p[K.quiz] ?: emptySet()).mapNotNull { r ->
+            val x = r.split('|'); if (x.size < 3) null else runCatching { QuizResult(x[0].toLong(), x[1].toInt(), x[2].toInt()) }.getOrNull()
+        }.sortedByDescending { it.at },
+        tasbihSkin = p[K.tSkin] ?: 0,
+        tasbihSound = p[K.tSound] ?: false,
+        tasbihVolumeKeys = p[K.tVol] ?: true,
+        tasbihCustom = decodeOwn(p[K.tCustom]),
     )
 
     val data: Flow<UserData> = ds.data.map(::decode)
@@ -172,4 +229,33 @@ class UserRepo(context: Context) {
     // ── Names / profile
     suspend fun toggleNameFav(i: Int) = ds.edit { val c = it[K.namesFav] ?: emptySet(); val k = i.toString(); it[K.namesFav] = if (k in c) c - k else c + k }
     suspend fun setAvatar(i: Int) = ds.edit { it[K.avatar] = i }
+    // ── Azkar
+    suspend fun toggleAzkarFav(id: String) = ds.edit { val c = it[K.azFav] ?: emptySet(); it[K.azFav] = if (id in c) c - id else c + id }
+    /** Saves today's progress for a session (counts done per item). Older days are dropped. */
+    suspend fun setAzkarProgress(sid: String, done: List<Int>) = ds.edit { p ->
+        val today = LocalDate.now().toString()
+        val keep = (p[K.azProg] ?: emptySet()).filter { it.startsWith("$today|") && !it.startsWith("$today|$sid|") }
+        p[K.azProg] = (keep + "$today|$sid|${done.joinToString(",")}").toSet()
+    }
+    suspend fun azkarComplete(sid: String) = ds.edit { p ->
+        val k = "${LocalDate.now()}:$sid"
+        p[K.azDone] = ((p[K.azDone] ?: emptySet()) + k).sortedDescending().take(800).toSet()
+    }
+    suspend fun addOwnAzkar(text: String, count: Int) = ds.edit {
+        val clean = text.replace('\u001F', ' ').trim(); if (clean.isEmpty()) return@edit
+        it[K.azOwn] = (it[K.azOwn] ?: emptySet()) + "c${System.currentTimeMillis()}\u001F${count.coerceIn(1, 10000)}\u001F$clean"
+    }
+    suspend fun deleteOwnAzkar(id: String) = ds.edit { p -> p[K.azOwn] = (p[K.azOwn] ?: emptySet()).filterNot { it.startsWith("$id\u001F") }.toSet() }
+    suspend fun addQuizResult(score: Int, total: Int) = ds.edit { p ->
+        p[K.quiz] = ((p[K.quiz] ?: emptySet()) + "${System.currentTimeMillis()}|$score|$total").sortedByDescending { it.substringBefore('|').toLongOrNull() ?: 0 }.take(50).toSet()
+    }
+    // ── Tasbih upgrades
+    suspend fun setTasbihSkin(i: Int) = ds.edit { it[K.tSkin] = i }
+    suspend fun setTasbihSound(b: Boolean) = ds.edit { it[K.tSound] = b }
+    suspend fun setTasbihVolumeKeys(b: Boolean) = ds.edit { it[K.tVol] = b }
+    suspend fun addTasbihCustom(text: String, target: Int) = ds.edit {
+        val clean = text.replace('\u001F', ' ').trim(); if (clean.isEmpty()) return@edit
+        it[K.tCustom] = (it[K.tCustom] ?: emptySet()) + "t${System.currentTimeMillis()}\u001F${target.coerceIn(0, 100000)}\u001F$clean"
+    }
+    suspend fun deleteTasbihCustom(id: String) = ds.edit { p -> p[K.tCustom] = (p[K.tCustom] ?: emptySet()).filterNot { it.startsWith("$id\u001F") }.toSet() }
 }
