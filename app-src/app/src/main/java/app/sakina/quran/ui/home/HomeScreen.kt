@@ -1,19 +1,16 @@
 package app.sakina.quran.ui.home
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import android.content.Intent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,261 +18,265 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material.icons.outlined.Fingerprint
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.NightsStay
-import androidx.compose.material.icons.outlined.Spa
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.sakina.quran.R
 import app.sakina.quran.data.Prefs
+import app.sakina.quran.data.UserData
 import app.sakina.quran.prayer.Hijri
+import app.sakina.quran.prayer.NextPrayer
 import app.sakina.quran.prayer.Prayer
 import app.sakina.quran.prayer.PrayerEngine
+import app.sakina.quran.ui.common.countdown
+import app.sakina.quran.ui.common.digits
 import app.sakina.quran.ui.common.formatTime
-import app.sakina.quran.ui.common.hms
 import app.sakina.quran.ui.common.isArabic
 import app.sakina.quran.ui.common.locale
+import app.sakina.quran.ui.common.num
+import app.sakina.quran.ui.common.openSafely
 import app.sakina.quran.ui.common.prayerName
+import app.sakina.quran.ui.common.rememberHealth
 import app.sakina.quran.ui.common.rememberNow
 import app.sakina.quran.ui.common.t
-import app.sakina.quran.ui.prayer.TimesCard
-import app.sakina.quran.ui.theme.DeepGreen
-import app.sakina.quran.ui.theme.Gold
+import app.sakina.quran.ui.icons.Ico
+import app.sakina.quran.ui.icons.PackIcon
+import app.sakina.quran.ui.icons.ico
+import app.sakina.quran.ui.kit.CardShape
+import app.sakina.quran.ui.kit.Chip
+import app.sakina.quran.ui.kit.CtaPill
+import app.sakina.quran.ui.kit.ListRow
+import app.sakina.quran.ui.kit.Muted
+import app.sakina.quran.ui.kit.SBox
+import app.sakina.quran.ui.kit.SCard
+import app.sakina.quran.ui.kit.SectionHeader
+import app.sakina.quran.ui.kit.VSpace
+import app.sakina.quran.ui.kit.press
+import app.sakina.quran.ui.kit.surface
+import app.sakina.quran.ui.tabs.feature
+import app.sakina.quran.ui.tabs.rememberFeatureOpener
+import app.sakina.quran.ui.theme.LocalSakina
+import app.sakina.quran.ui.theme.QuranFont
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
+
+/** The five obligatory prayers in order. */
+val FARD = listOf(Prayer.FAJR, Prayer.DHUHR, Prayer.ASR, Prayer.MAGHRIB, Prayer.ISHA)
+
+/** The prayer whose time we are in now (the one before [next]). */
+fun NextPrayer.currentPrayer(): Prayer = FARD[(FARD.indexOf(prayer) - 1 + FARD.size) % FARD.size]
+
+private data class Ayah(val text: String, val refAr: String, val refEn: String, val en: String)
+
+/** Rotating "ayah of the day" (Uthmani text, Tanzil; English is Sakina's own short rendering). */
+private val AYAT = listOf(
+    Ayah("أَلَا بِذِكْرِ ٱللَّهِ تَطْمَئِنُّ ٱلْقُلُوبُ", "الرعد ٢٨", "Ar-Ra'd 13:28", "Surely, in the remembrance of Allah hearts find rest."),
+    Ayah("فَٱذْكُرُونِىٓ أَذْكُرْكُمْ وَٱشْكُرُوا۟ لِى وَلَا تَكْفُرُونِ", "البقرة ١٥٢", "Al-Baqarah 2:152", "So remember Me; I will remember you. Be grateful to Me and do not deny Me."),
+    Ayah("إِنَّ مَعَ ٱلْعُسْرِ يُسْرًا", "الشرح ٦", "Ash-Sharh 94:6", "Indeed, with hardship comes ease."),
+    Ayah("وَقَالَ رَبُّكُمُ ٱدْعُونِىٓ أَسْتَجِبْ لَكُمْ", "غافر ٦٠", "Ghafir 40:60", "Your Lord says: call upon Me, I will answer you."),
+    Ayah("وَمَن يَتَوَكَّلْ عَلَى ٱللَّهِ فَهُوَ حَسْبُهُۥٓ", "الطلاق ٣", "At-Talaq 65:3", "Whoever puts his trust in Allah, He is enough for him."),
+)
+
+private data class Story(val key: String, val ico: Ico, val ar: String, val en: String)
+
+private val STORIES = listOf(
+    Story("ayah", Ico.QURAN, "آية", "Ayah"), Story("hadith", Ico.HADITH, "حديث", "Hadith"),
+    Story("dua", Ico.DUA, "دعاء", "Dua"), Story("dhikr", Ico.TASBIH, "ذكر", "Dhikr"),
+    Story("names", Ico.NAMES, "الأسماء", "Names"), Story("idea", Ico.IDEA, "تأمّل", "Reflect"),
+)
 
 @Composable
-fun HomeScreen(prefs: Prefs, onOpen: (String) -> Unit, onCycleMode: (Prayer) -> Unit, fixedNow: ZonedDateTime? = null) {
+fun HomeScreen(
+    prefs: Prefs, user: UserData, onOpen: (String) -> Unit,
+    onDismissHealth: (String) -> Unit, onSeenStory: (String) -> Unit, fixedNow: ZonedDateTime? = null,
+) {
     val now = fixedNow ?: rememberNow()
+    val ctx = LocalContext.current
+    val look = LocalSakina.current.look
     val place = prefs.place
-    val next = PrayerEngine.next(place, now, prefs.calc)
-    val localDate = now.withZoneSameInstant(place.zone).toLocalDate()
-    val today = PrayerEngine.day(place, localDate, prefs.calc)
     val ar = isArabic()
-    val greg = now.format(DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", locale(ar)))
-    val hijri = Hijri.format(now.toInstant().toEpochMilli(), ar, prefs.hijriAdj)
+    val next = PrayerEngine.next(place, now, prefs.calc)
+    val cur = next.currentPrayer()
+    val localDate = now.withZoneSameInstant(place.zone).toLocalDate()
+    val todayKey = localDate.toString()
+    val millis = now.toInstant().toEpochMilli()
+    val hijri = digits(Hijri.dayMonth(millis, ar, prefs.hijriAdj), ar)
+    val greg = digits(now.format(DateTimeFormatter.ofPattern("EEEE d MMMM", locale(ar))), ar)
     val friday = next.at.dayOfWeek == DayOfWeek.FRIDAY && next.prayer == Prayer.DHUHR
-    val left = Duration.between(now, next.at)
-    val span = Duration.between(next.previous, next.at).seconds.coerceAtLeast(1)
-    val progress = (1f - left.seconds.toFloat() / span).coerceIn(0f, 1f)
+    val issues = rememberHealth()
+    val openFeature = rememberFeatureOpener(onOpen)
+    val ayah = AYAT[(localDate.toEpochDay() % AYAT.size).toInt()]
 
-    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        // ── Top bar: profile · Hijri date · bell · stars
         item {
-            Box(
-                Modifier.fillMaxWidth()
-                    .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
-                    .background(Brush.verticalGradient(listOf(Color(0xFF07322A), DeepGreen, Color(0xFF14806A))))
+            Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 16.dp, end = 16.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(42.dp).surface(CircleShape).press { onOpen("more") }, contentAlignment = Alignment.Center) { PackIcon(Ico.PROFILE, 28.dp) }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(hijri, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
+                    Muted(greg)
+                }
+                Box(Modifier.size(42.dp).surface(CircleShape).semantics { contentDescription = "notifications" }, contentAlignment = Alignment.Center) {
+                    PackIcon(Ico.BELL, 24.dp)
+                    if (issues.isNotEmpty()) Box(Modifier.align(Alignment.TopEnd).padding(7.dp).size(9.dp).clip(CircleShape).background(Color(0xFFEF4444)))
+                }
+                Spacer(Modifier.width(8.dp))
+                Row(Modifier.height(42.dp).surface(CircleShape).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    PackIcon(Ico.STAR, 20.dp); Spacer(Modifier.width(6.dp))
+                    Text(num(user.totalPrayed, ar), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        // ── Adhan reliability banner (dismissable for today)
+        if (issues.isNotEmpty() && user.healthDismissedDay != todayKey) item {
+            val first = issues.first()
+            val fg = if (look.dark) Color.White else Color(0xFF7A1F2B)
+            Row(
+                Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(CardShape).background(look.warn).padding(start = 14.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                StarField(Modifier.matchParentSize())
-                Column(Modifier.statusBarsPadding().padding(horizontal = 22.dp, vertical = 16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.greeting), color = Gold, style = MaterialTheme.typography.titleMedium)
-                            Text(hijri, color = Color.White, style = MaterialTheme.typography.titleLarge)
-                            Text(greg, color = Color.White.copy(alpha = .75f), style = MaterialTheme.typography.bodySmall)
-                        }
-                        Row(
-                            Modifier.clip(CircleShape).background(Color.White.copy(alpha = .12f))
-                                .clickable { onOpen("city") }.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.Outlined.LocationOn, null, Modifier.size(16.dp), tint = Gold)
-                            Spacer(Modifier.width(4.dp))
-                            Text(place.label(ar), color = Color.White, style = MaterialTheme.typography.labelLarge, maxLines = 1)
-                        }
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    SunArc(today.times, now, Modifier.fillMaxWidth().height(150.dp))
-                    Column(
-                        Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(stringResource(R.string.next_prayer), color = Color.White.copy(alpha = .8f), style = MaterialTheme.typography.labelLarge)
-                        Text(
-                            prayerName(next.prayer, friday), color = Color.White, fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.displaySmall, modifier = Modifier.semantics { heading() }
-                        )
-                        Text(formatTime(next.at, ar), color = Gold, style = MaterialTheme.typography.titleLarge)
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            hms(left, ar), color = Color.White, fontSize = 40.sp, fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center,
-                        )
-                        Text(t("متبقي على الأذان", "until the adhan"), color = Color.White.copy(alpha = .7f), style = MaterialTheme.typography.bodySmall)
-                        Spacer(Modifier.height(10.dp))
-                        ProgressLine(progress, Modifier.fillMaxWidth(0.8f).height(6.dp))
-                    }
-                    Spacer(Modifier.height(14.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        MiniStat(t("منتصف الليل", "Midnight"), formatTime(today.midnight, ar))
-                        MiniStat(t("الثلث الأخير", "Last third"), formatTime(today.lastThird, ar))
-                        MiniStat(t("الشروق", "Sunrise"), formatTime(today.times.getValue(Prayer.SUNRISE), ar))
+                PackIcon(Ico.ADHAN, 32.dp); Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(t("فعّل تنبيهات الأذان المضمونة", "Make adhan alerts reliable"), color = fg, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(t(first.ar, first.en), color = fg.copy(alpha = .85f), style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    t("إصلاح", "Fix"), color = look.onCta, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clip(CircleShape).background(look.cta).press { ctx.openSafely(first.fix) }.padding(horizontal = 14.dp, vertical = 7.dp),
+                )
+                IconButton(onClick = { onDismissHealth(todayKey) }) { Icon(Icons.Outlined.Close, t("إخفاء", "Dismiss"), tint = fg) }
+            }
+        }
+        // ── Stories
+        item {
+            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                items(STORIES) { s ->
+                    val seen = "$todayKey:${s.key}" in user.storiesSeen
+                    val ring = if (seen) Brush.linearGradient(listOf(look.onCardMuted.copy(alpha = .35f), look.onCardMuted.copy(alpha = .35f)))
+                    else Brush.sweepGradient(listOf(look.cta, MaterialTheme.colorScheme.secondary, look.cta))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(68.dp)) {
+                        Box(
+                            Modifier.size(66.dp).clip(CircleShape).border(2.5.dp, ring, CircleShape).padding(5.dp)
+                                .surface(CircleShape, elevated = false).press { onSeenStory("$todayKey:${s.key}"); onOpen("community") },
+                            contentAlignment = Alignment.Center,
+                        ) { PackIcon(s.ico, 34.dp) }
+                        VSpace(4.dp)
+                        Text(t(s.ar, s.en), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
                     }
                 }
             }
         }
+        // ── Now / Next prayer cards
         item {
-            Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Quick(Icons.AutoMirrored.Outlined.MenuBook, t("المصحف", "Mushaf"), Modifier.weight(1f)) { onOpen("quran") }
-                Quick(Icons.Outlined.Explore, t("القبلة", "Qibla"), Modifier.weight(1f)) { onOpen("qibla") }
-                Quick(Icons.Outlined.Fingerprint, t("السبحة", "Tasbih"), Modifier.weight(1f)) { onOpen("azkar") }
-                Quick(Icons.Outlined.Spa, t("الأذكار", "Azkar"), Modifier.weight(1f)) { onOpen("azkar") }
+            Row(Modifier.padding(horizontal = 16.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                val curAt = PrayerEngine.day(place, next.previous.toLocalDate(), prefs.calc).times[cur] ?: next.previous
+                PrayerMiniCard(
+                    Modifier.weight(1f).fillMaxHeight(), label = t("الآن", "Now"), live = true,
+                    name = prayerName(cur), time = formatTime(curAt, ar), ico = cur.ico(), extra = null,
+                ) { onOpen("prayers") }
+                PrayerMiniCard(
+                    Modifier.weight(1f).fillMaxHeight(), label = t("التالي", "Next"), live = false,
+                    name = prayerName(next.prayer, friday), time = formatTime(next.at, ar), ico = next.prayer.ico(),
+                    extra = t("بعد ", "in ") + countdown(Duration.between(now, next.at), ar),
+                ) { onOpen("prayers") }
+            }
+        }
+        // ── Daily ayah
+        item {
+            SCard(Modifier.padding(horizontal = 16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    PackIcon(Ico.QURAN, 28.dp); Spacer(Modifier.width(10.dp))
+                    Text(t("آية اليوم", "Ayah of the day"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    Box(Modifier.size(36.dp).clip(CircleShape).press {
+                        val body = "${ayah.text}\n(${if (ar) ayah.refAr else ayah.refEn})\n— Sakina"
+                        ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, body), null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }, contentAlignment = Alignment.Center) { PackIcon(Ico.SHARE, 22.dp, contentDescription = t("مشاركة", "Share")) }
+                }
+                VSpace(10.dp)
+                Text(
+                    ayah.text, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleLarge.copy(fontFamily = QuranFont, fontSize = 27.sp, lineHeight = 50.sp),
+                )
+                if (!ar) { VSpace(4.dp); Text(ayah.en, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium) }
+                VSpace(6.dp)
+                Muted(if (ar) ayah.refAr else ayah.refEn, Modifier.fillMaxWidth())
+            }
+        }
+        // ── Features (user-editable order)
+        item {
+            SectionHeader(t("المميزات", "Features"), Modifier.padding(horizontal = 12.dp)) {
+                Icon(Icons.Outlined.Edit, t("تعديل", "Edit"), tint = look.onCardMuted, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(10.dp))
+                Chip(t("المزيد", "More"), onClick = { onOpen("explore") })
             }
         }
         item {
-            Box(Modifier.padding(horizontal = 16.dp)) {
-                TimesCard(today, prefs, next.prayer, ar, title = stringResource(R.string.today_times), onCycleMode = onCycleMode)
-            }
-        }
-        item {
-            Card(
-                Modifier.padding(horizontal = 16.dp).fillMaxWidth(), shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-            ) {
-                Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.NightsStay, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text(t("آية اليوم", "Verse of the day"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                        Text(
-                            "أَلَا بِذِكْرِ ٱللَّهِ تَطْمَئِنُّ ٱلْقُلُوبُ",
-                            style = MaterialTheme.typography.titleLarge.copy(fontFamily = app.sakina.quran.ui.theme.QuranFont, fontSize = 24.sp, lineHeight = 44.sp),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                        Text(t("الرعد ٢٨", "Ar-Ra'd 13:28"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = .8f))
+            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(user.features.mapNotNull { feature(it) }) { f ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(76.dp)) {
+                        SBox(Modifier.size(70.dp), onClick = { openFeature(f) }) { PackIcon(f.ico, 42.dp, Modifier.align(Alignment.Center)) }
+                        VSpace(6.dp)
+                        Text(t(f.ar, f.en), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
         }
+        // ── For you
+        item { SectionHeader(t("لك", "For you"), Modifier.padding(horizontal = 12.dp)) }
         item {
-            Text(
-                stringResource(R.string.free_badge),
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelMedium,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-}
-
-
-@Composable
-private fun StarField(modifier: Modifier) {
-    val tw = rememberInfiniteTransition(label = "stars")
-    val a by tw.animateFloat(0.25f, 0.9f, infiniteRepeatable(tween(2600), RepeatMode.Reverse), label = "a")
-    val stars = remember8
-    Canvas(modifier) {
-        stars.forEachIndexed { i, (x, y, r) ->
-            drawCircle(Color.White.copy(alpha = if (i % 2 == 0) a else 1.15f - a), r, Offset(x * size.width, y * size.height))
-        }
-    }
-}
-
-private val remember8: List<Triple<Float, Float, Float>> = run {
-    val rnd = java.util.Random(7)
-    List(42) { Triple(rnd.nextFloat(), rnd.nextFloat() * 0.55f, 0.8f + rnd.nextFloat() * 1.8f) }
-}
-
-/** The sun's path from sunrise to maghrib, with a marker for "now" and dots for each prayer. */
-@Composable
-private fun SunArc(times: Map<Prayer, ZonedDateTime>, now: ZonedDateTime, modifier: Modifier) {
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val start = times.getValue(Prayer.SUNRISE).toEpochSecond().toFloat()
-    val end = times.getValue(Prayer.MAGHRIB).toEpochSecond().toFloat()
-    fun frac(t: ZonedDateTime) = ((t.toEpochSecond() - start) / (end - start)).coerceIn(-0.08f, 1.08f)
-    val f = frac(now)
-    val day = now.toEpochSecond() in start.toLong()..end.toLong()
-    Canvas(modifier) {
-        val w = size.width; val h = size.height
-        val cx = w / 2; val cy = h * 0.95f; val r = minOf(w * 0.42f, h * 0.85f)
-        fun pt(fr: Float): Offset {
-            val ang = PI * (1 - fr)               // 0 → left(east in LTR), 1 → right
-            val x = (cos(ang) * r).toFloat(); val y = (sin(ang) * r).toFloat()
-            return Offset(cx + if (rtl) -x else x, cy - y)
-        }
-        drawLine(Color.White.copy(alpha = .25f), Offset(cx - r - 16, cy), Offset(cx + r + 16, cy), 2f)
-        drawArc(
-            Color.White.copy(alpha = .35f), 180f, 180f, false, Offset(cx - r, cy - r), Size(2 * r, 2 * r),
-            style = Stroke(3f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 12f)))
-        )
-        listOf(Prayer.DHUHR, Prayer.ASR).forEach { p -> drawCircle(Color.White.copy(alpha = .8f), 5f, pt(frac(times.getValue(p)))) }
-        val sun = pt(f.coerceIn(0f, 1f))
-        if (day) {
-            drawCircle(Brush.radialGradient(listOf(Gold.copy(alpha = .55f), Color.Transparent), sun, 46f), 46f, sun)
-            drawCircle(Gold, 14f, sun)
-        } else {
-            val moon = Offset(cx, cy - r * 0.55f)
-            drawCircle(Color(0xFFF4F1DE), 13f, moon)
-            drawCircle(Color(0xFF0B4A3E), 11f, Offset(moon.x + (if (rtl) -6f else 6f), moon.y - 4f))
-        }
-    }
-}
-
-@Composable
-private fun ProgressLine(p: Float, modifier: Modifier) {
-    Box(modifier.clip(CircleShape).background(Color.White.copy(alpha = .18f))) {
-        Box(Modifier.fillMaxWidth(p).height(6.dp).clip(CircleShape).background(Brush.horizontalGradient(listOf(Gold, Color(0xFFF4D58D)))))
-    }
-}
-
-@Composable
-private fun MiniStat(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, color = Color.White.copy(alpha = .7f), style = MaterialTheme.typography.labelSmall)
-        Text(value, color = Color.White, style = MaterialTheme.typography.labelLarge)
-    }
-}
-
-@Composable
-private fun Quick(icon: ImageVector, label: String, modifier: Modifier, onClick: () -> Unit) {
-    Card(
-        modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    ) {
-        Column(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                Icon(icon, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+            SCard(Modifier.padding(horizontal = 16.dp), padding = PaddingValues(6.dp)) {
+                val prayedToday = user.prayedOn(localDate)
+                ListRow(Ico.TRACKER, t("متتبع الصلاة", "Prayer tracker"), digits(t("صلّيت $prayedToday من ٥ اليوم", "$prayedToday of 5 prayed today"), ar), onClick = { onOpen("prayers") })
+                ListRow(Ico.AZKAR, t(if (now.hour < 12) "أذكار الصباح" else "أذكار المساء", if (now.hour < 12) "Morning azkar" else "Evening azkar"), t("دقائق تطمئن بها", "A few calm minutes"), onClick = { feature("azkar")?.let(openFeature) })
+                ListRow(Ico.KHATMA, t("خطة ختمة", "Khatma plan"), t("اقرأ وردك اليومي", "Read your daily portion"), onClick = { onOpen("quran") })
             }
-            Spacer(Modifier.height(6.dp))
-            Text(label, style = MaterialTheme.typography.labelLarge)
         }
+        item {
+            Muted(t("مجاني للأبد • بلا إعلانات • يعمل دون إنترنت", "Free forever • No ads • Works offline"), Modifier.fillMaxWidth().padding(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun PrayerMiniCard(modifier: Modifier, label: String, live: Boolean, name: String, time: String, ico: Ico, extra: String?, onClick: () -> Unit) {
+    val look = LocalSakina.current.look
+    SCard(modifier, onClick = onClick, padding = PaddingValues(14.dp)) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (live) { Box(Modifier.size(7.dp).clip(CircleShape).background(look.cta)); Spacer(Modifier.width(6.dp)) }
+                    Muted(label)
+                }
+                VSpace(2.dp)
+                Text(name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text(time, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
+            }
+            PackIcon(ico, 40.dp)
+        }
+        if (extra != null) { VSpace(4.dp); Text(extra, style = MaterialTheme.typography.labelLarge, color = look.cta, maxLines = 1) }
     }
 }
