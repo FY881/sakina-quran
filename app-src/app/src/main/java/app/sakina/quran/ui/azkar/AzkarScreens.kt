@@ -555,7 +555,7 @@ fun AzkarMineScreen(user: UserData, onBack: () -> Unit, onOpen: (String) -> Unit
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var text by rememberSaveable { mutableStateOf("") }
     var cnt by rememberSaveable { mutableIntStateOf(3) }
-    val favs = remember(azkar, quran, user.azkarFav) {
+    val favs = remember<List<Dhikr>>(azkar, quran, user.azkarFav) {
         val a = azkar ?: return@remember emptyList()
         user.azkarFav.mapNotNull { id -> a.dhikr(id) ?: quran?.let { Azkar.quranDhikr(it, id) } }
     }
