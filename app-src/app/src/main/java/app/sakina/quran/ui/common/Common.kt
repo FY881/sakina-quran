@@ -52,7 +52,21 @@ fun t(ar: String, en: String): String = if (isArabic()) ar else en
 fun locale(arabic: Boolean): Locale = if (arabic) Locale.forLanguageTag("ar-EG") else Locale.ENGLISH
 
 fun formatTime(t: ZonedDateTime, arabic: Boolean): String =
-    t.format(DateTimeFormatter.ofPattern("h:mm a", locale(arabic)))
+    digits(t.format(DateTimeFormatter.ofPattern("h:mm a", locale(arabic))), arabic)
+
+/** Western → Arabic-Indic digits (٠-٩) when [arabic]. */
+fun digits(s: String, arabic: Boolean): String =
+    if (!arabic) s else buildString(s.length) { s.forEach { c -> append(if (c in '0'..'9') '\u0660' + (c - '0') else c) } }
+
+fun num(n: Int, arabic: Boolean): String = digits(n.toString(), arabic)
+
+/** Short countdown: "1h 23m" / "43m 18s" (Arabic: "١س ٢٣د"). */
+fun countdown(d: Duration, arabic: Boolean): String {
+    val s = d.seconds.coerceAtLeast(0)
+    val h = s / 3600; val m = (s % 3600) / 60; val sec = s % 60
+    val txt = if (arabic) { if (h > 0) "${h}س ${m}د" else "${m}د ${sec}ث" } else { if (h > 0) "${h}h ${m}m" else "${m}m ${sec}s" }
+    return digits(txt, arabic)
+}
 
 @Composable
 fun ComingSoon(@StringRes title: Int) {
@@ -107,7 +121,7 @@ fun rememberNow(periodMs: Long = 1_000): ZonedDateTime {
 
 fun hms(d: Duration, arabic: Boolean): String {
     val s = d.seconds.coerceAtLeast(0)
-    return "%d:%02d:%02d".format(locale(arabic), s / 3600, (s % 3600) / 60, s % 60)
+    return digits("%d:%02d:%02d".format(Locale.US, s / 3600, (s % 3600) / 60, s % 60), arabic)
 }
 
 @Composable
