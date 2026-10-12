@@ -73,6 +73,17 @@ for lang in ar en; do
   launch $lang "explore?q=$q" DARK;    shot "${lang}_${m}_a21_explore_azkar"
   launch $lang names DARK;             shot "${lang}_${m}_a22_names"
 done
+# Regression pass on earlier screens (AR + EN dark)
+for lang in ar en; do
+  adb shell cmd locale set-app-locales $PKG --locales $lang || true
+  launch $lang prayers DARK;            shot "${lang}_dark_r02_prayers"
+  launch $lang explore DARK;            shot "${lang}_dark_r03_explore"
+  launch $lang quran DARK;              shot "${lang}_dark_r13_quran_index"
+  launch $lang "reader/2/1" DARK;       shot "${lang}_dark_r14_quran_reader"
+  launch $lang onboarding DARK false;   shot "${lang}_dark_r07_onboarding"
+  launch $lang profile DARK;            shot "${lang}_dark_r09_profile"
+done
+adb shell cmd locale set-app-locales $PKG --locales ar || true
 launch ar azkar LIGHT;          shot "ar_light_a01_azkar"
 launch ar "azkar/evening" LIGHT; shot "ar_light_a04_session_evening"
 launch ar duas LIGHT;           shot "ar_light_a10_duas"
