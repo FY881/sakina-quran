@@ -511,6 +511,7 @@ fun HisnScreen(initialCat: String?, onBack: () -> Unit, onOpen: (String) -> Unit
                         ArabicText(c.title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = look.onCard, maxLines = 2)
                         Muted(digits(t("${c.items.size} • ${AzCat.of(c.index)?.ar ?: ""}", "${c.items.size} • ${AzCat.of(c.index)?.en ?: ""}"), ar))
                     }
+                    Spacer(Modifier.width(10.dp))
                     AzCat.of(c.index)?.let { PackIcon(it.ico, 28.dp) }
                 }
             }
