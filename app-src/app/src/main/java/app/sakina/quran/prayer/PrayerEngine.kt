@@ -26,17 +26,19 @@ data class Place(
     fun label(arabic: Boolean) = if (arabic && nameAr.isNotBlank()) nameAr else name
 }
 
-enum class Method(val ar: String, val en: String, val adhan: CalculationMethod) {
-    EGYPTIAN("الهيئة المصرية العامة للمساحة", "Egyptian General Authority of Survey", CalculationMethod.EGYPTIAN),
-    UMM_AL_QURA("أم القرى (مكة المكرمة)", "Umm al-Qura, Makkah", CalculationMethod.UMM_AL_QURA),
-    MWL("رابطة العالم الإسلامي", "Muslim World League", CalculationMethod.MUSLIM_WORLD_LEAGUE),
-    KARACHI("جامعة العلوم الإسلامية بكراتشي", "University of Islamic Sciences, Karachi", CalculationMethod.KARACHI),
-    DUBAI("دبي", "Dubai", CalculationMethod.DUBAI),
-    KUWAIT("الكويت", "Kuwait", CalculationMethod.KUWAIT),
-    QATAR("قطر", "Qatar", CalculationMethod.QATAR),
-    SINGAPORE("سنغافورة / ماليزيا / إندونيسيا", "Singapore / Malaysia / Indonesia", CalculationMethod.SINGAPORE),
-    NORTH_AMERICA("أمريكا الشمالية (ISNA)", "North America (ISNA)", CalculationMethod.NORTH_AMERICA),
-    MOONSIGHTING("لجنة رؤية الهلال", "Moonsighting Committee", CalculationMethod.MOON_SIGHTING_COMMITTEE);
+enum class Method(val ar: String, val en: String, val adhan: CalculationMethod, val shortAr: String, val shortEn: String) {
+    EGYPTIAN("الهيئة المصرية العامة للمساحة", "Egyptian General Authority of Survey", CalculationMethod.EGYPTIAN, "الهيئة المصرية", "Egypt"),
+    UMM_AL_QURA("أم القرى (مكة المكرمة)", "Umm al-Qura, Makkah", CalculationMethod.UMM_AL_QURA, "أم القرى", "Umm al-Qura"),
+    MWL("رابطة العالم الإسلامي", "Muslim World League", CalculationMethod.MUSLIM_WORLD_LEAGUE, "رابطة العالم الإسلامي", "MWL"),
+    KARACHI("جامعة العلوم الإسلامية بكراتشي", "University of Islamic Sciences, Karachi", CalculationMethod.KARACHI, "كراتشي", "Karachi"),
+    DUBAI("دبي", "Dubai", CalculationMethod.DUBAI, "دبي", "Dubai"),
+    KUWAIT("الكويت", "Kuwait", CalculationMethod.KUWAIT, "الكويت", "Kuwait"),
+    QATAR("قطر", "Qatar", CalculationMethod.QATAR, "قطر", "Qatar"),
+    SINGAPORE("سنغافورة / ماليزيا / إندونيسيا", "Singapore / Malaysia / Indonesia", CalculationMethod.SINGAPORE, "سنغافورة", "Singapore"),
+    NORTH_AMERICA("أمريكا الشمالية (ISNA)", "North America (ISNA)", CalculationMethod.NORTH_AMERICA, "ISNA", "ISNA"),
+    MOONSIGHTING("لجنة رؤية الهلال", "Moonsighting Committee", CalculationMethod.MOON_SIGHTING_COMMITTEE, "رؤية الهلال", "Moonsighting");
+
+    fun short(arabic: Boolean) = if (arabic) shortAr else shortEn
 
     companion object {
         fun forCountry(cc: String): Method = when (cc.uppercase()) {
