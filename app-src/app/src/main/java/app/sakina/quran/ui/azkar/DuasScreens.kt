@@ -23,6 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -90,7 +92,7 @@ fun DuasScreen(user: UserData, initialTab: Int, onBack: () -> Unit, onOpen: (Str
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(if (ar) meta.topicAr else meta.topicEn, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = look.cta)
-                            Muted(d.ref)
+                            Muted(if (ar) d.ref else quran?.let { enRef(it, meta.sura, meta.from, meta.to) } ?: d.ref)
                         }
                         IconButton(onClick = { onFav(d.id) }) {
                             Icon(if (fav) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder, t("مفضلة", "Favourite"), tint = if (fav) Color(0xFFEF4444) else look.onCardMuted)
@@ -99,7 +101,7 @@ fun DuasScreen(user: UserData, initialTab: Int, onBack: () -> Unit, onOpen: (Str
                             Icon(Icons.Outlined.Share, t("مشاركة كصورة", "Share as image"), tint = look.onCardMuted)
                         }
                     }
-                    Text(d.text, fontFamily = QuranFont, fontSize = 21.sp, lineHeight = 42.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(end = 10.dp, top = 4.dp))
+                    Text(d.text, fontFamily = QuranFont, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), fontSize = 21.sp, lineHeight = 42.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(end = 10.dp, top = 4.dp))
                     VSpace(6.dp)
                     Chip(t("افتح في المصحف", "Open in the mushaf"), leading = { PackIcon(Ico.QURAN, 18.dp) }, onClick = { onOpen("reader/${meta.sura}/${meta.from}") })
                 }
@@ -110,11 +112,11 @@ fun DuasScreen(user: UserData, initialTab: Int, onBack: () -> Unit, onOpen: (Str
                 SCard(onClick = { onOpen("azkar/h${c.index}") }, padding = PaddingValues(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(c.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = look.cta, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Muted(digits(t("${c.items.size} أدعية", "${c.items.size} duas"), ar))
+                        Muted(duasLabel(c.items.size, ar))
                     }
                     VSpace(4.dp)
-                    Text(c.items.first().text, fontFamily = QuranFont, fontSize = 18.sp, lineHeight = 34.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                    Muted(c.items.first().ref)
+                    Text(c.items.first().text, fontFamily = QuranFont, fontSize = 18.sp, lineHeight = 34.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), modifier = Modifier.fillMaxWidth())
+                    ArabicText(c.items.first().ref, maxLines = 2)
                 }
             }
         }
@@ -159,13 +161,13 @@ fun RuqyahScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     PackIcon(Ico.QURAN, 26.dp); Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(d.ref, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                        Text(if (ar) d.ref else enRef(q, r[0], r[1], r[2]), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                         Muted(if (r[3] > 1) countLabel(r[3], ar) else t("اضغط لعرض النص", "Tap to show the text"))
                     }
                 }
                 if (expanded) {
                     VSpace(8.dp)
-                    Text(d.text, fontFamily = QuranFont, fontSize = 21.sp, lineHeight = 42.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text(d.text, fontFamily = QuranFont, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), fontSize = 21.sp, lineHeight = 42.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     VSpace(6.dp)
                     Chip(t("افتح في المصحف", "Open in the mushaf"), leading = { PackIcon(Ico.QURAN, 18.dp) }, onClick = { onOpen("reader/${r[0]}/${r[1]}") })
                 }
@@ -177,8 +179,8 @@ fun RuqyahScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
             SCard(onClick = { onOpen("azkar/h${c.index}") }, padding = PaddingValues(14.dp)) {
                 Text(c.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = look.cta)
                 VSpace(4.dp)
-                Text(c.items.first().text, fontFamily = QuranFont, fontSize = 18.sp, lineHeight = 34.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
-                Muted(c.items.first().ref)
+                Text(c.items.first().text, fontFamily = QuranFont, fontSize = 18.sp, lineHeight = 34.sp, maxLines = 4, overflow = TextOverflow.Ellipsis, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), modifier = Modifier.fillMaxWidth())
+                ArabicText(c.items.first().ref, maxLines = 2)
             }
         }
         item { Muted(t("التلاوة الصوتية للرقية ستُضاف من مصدر مرخّص في تحديث قادم.", "Recited audio for the ruqyah will be added from a licensed source in a later update."), Modifier.fillMaxWidth().padding(8.dp)) }
@@ -221,10 +223,11 @@ fun IstikharaScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                     }
                 }
                 Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(look.cta.copy(alpha = .08f)).padding(12.dp)) {
-                    Text(d.text, fontFamily = QuranFont, fontSize = 20.sp, lineHeight = 40.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text(d.text, fontFamily = QuranFont, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), fontSize = 20.sp, lineHeight = 40.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 }
                 VSpace(6.dp)
-                Muted(t("المصدر: ", "Source: ") + d.ref)
+                Text(t("المصدر", "Source"), style = MaterialTheme.typography.labelMedium, color = look.cta)
+                ArabicText(d.ref)
                 VSpace(10.dp)
                 CtaPill(t("افتح الدعاء بالعدّاد", "Open the dua with the counter"), Modifier.fillMaxWidth()) { onOpen("azkar/h$ISTIKHARA_CHAPTER") }
             }
