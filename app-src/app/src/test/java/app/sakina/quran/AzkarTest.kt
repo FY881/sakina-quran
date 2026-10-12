@@ -83,4 +83,36 @@ class AzkarTest {
 
     private fun assertNearT(a: ZonedDateTime, b: ZonedDateTime) =
         assertTrue("expected ~$a got $b", kotlin.math.abs(java.time.Duration.between(a, b).seconds) < 60)
+
+    @Test fun labelsAndStages() {
+        assertEquals("مرة واحدة", app.sakina.quran.ui.azkar.countLabel(1, true))
+        assertEquals("مرتان", app.sakina.quran.ui.azkar.countLabel(2, true))
+        assertEquals("٣ مرات", app.sakina.quran.ui.azkar.countLabel(3, true))
+        assertEquals("١٠٠ مرة", app.sakina.quran.ui.azkar.countLabel(100, true))
+        assertEquals("Once", app.sakina.quran.ui.azkar.countLabel(1, false))
+        assertEquals("1 dua", app.sakina.quran.ui.azkar.duasLabel(1, false))
+        assertEquals("٤ أدعية", app.sakina.quran.ui.azkar.duasLabel(4, true))
+        val f = app.sakina.quran.ui.dhikr::fatimahStage
+        assertEquals("subhan", f(0).first.id); assertEquals(32, f(32).second)
+        assertEquals("hamd", f(33).first.id); assertEquals(0, f(33).second)
+        assertEquals("akbar", f(66).first.id); assertEquals(34, f(99).third)
+        assertEquals("subhan", f(100).first.id)
+    }
+
+    @Test fun openRoutesPointInsideSessions() {
+        val d = az.chapter(96)!!.items[0]
+        assertEquals("azkar/h96@0", app.sakina.quran.ui.azkar.openRouteFor(az, d))
+        val m = az.morning[3]
+        assertEquals("azkar/morning@3", app.sakina.quran.ui.azkar.openRouteFor(az, m))
+        val ev = az.evening.first { it !in az.morning }
+        assertTrue(app.sakina.quran.ui.azkar.openRouteFor(az, ev).startsWith("azkar/evening@"))
+    }
+
+    @Test fun azkarStreakCountsMorningOrEvening() {
+        val t = LocalDate.of(2026, 10, 12)
+        val u = app.sakina.quran.data.UserData(azkarDone = setOf("${t}:morning", "${t.minusDays(1)}:evening", "${t.minusDays(2)}:sleep", "${t.minusDays(3)}:morning"))
+        assertEquals(2, u.azkarStreak(t))
+        assertEquals(1, app.sakina.quran.data.UserData(azkarDone = setOf("${t.minusDays(1)}:morning")).azkarStreak(t))
+        assertEquals(4, u.azkarDaysInWeek(t))
+    }
 }
