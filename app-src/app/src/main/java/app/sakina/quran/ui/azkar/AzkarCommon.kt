@@ -75,6 +75,34 @@ fun copyText(ctx: Context, text: String, ar: Boolean) {
     Toast.makeText(ctx, if (ar) "نُسخ النص" else "Copied", Toast.LENGTH_SHORT).show()
 }
 
+/** Arabic content (dhikr references, virtues, titles) always laid out right-to-left, also inside the English UI. */
+@Composable
+fun ArabicText(text: String, modifier: Modifier = Modifier, style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodySmall, color: androidx.compose.ui.graphics.Color = LocalSakina.current.look.onCardMuted, maxLines: Int = Int.MAX_VALUE) {
+    androidx.compose.material3.Text(
+        text, modifier.fillMaxWidth(), style = style.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Rtl),
+        color = color, textAlign = androidx.compose.ui.text.style.TextAlign.Right, maxLines = maxLines,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+    )
+}
+
+@Composable
+fun switchColors(): androidx.compose.material3.SwitchColors {
+    val l = LocalSakina.current.look
+    return androidx.compose.material3.SwitchDefaults.colors(
+        checkedTrackColor = l.cta, checkedThumbColor = l.onCta, checkedBorderColor = l.cta,
+        uncheckedTrackColor = l.onCardMuted.copy(alpha = .18f), uncheckedThumbColor = l.onCardMuted, uncheckedBorderColor = l.onCardMuted.copy(alpha = .8f),
+    )
+}
+
+/** "دعاء واحد / دعاءان / ٣ أدعية" or "1 dua / 3 duas". */
+fun duasLabel(n: Int, ar: Boolean): String = if (ar) when {
+    n == 1 -> "دعاء واحد"; n == 2 -> "دعاءان"; n in 3..10 -> "${num(n, true)} أدعية"; else -> "${num(n, true)} دعاءً"
+} else if (n == 1) "1 dua" else "$n duas"
+
+/** English reference for a Quran range, e.g. "Al-Baqara 2:255–257". */
+fun enRef(q: app.sakina.quran.quran.Quran, s: Int, a: Int, b: Int): String =
+    "${q.suras[s - 1].tname} $s:$a" + if (b != a) "–$b" else ""
+
 @Composable
 fun SearchField(q: String, onQ: (String) -> Unit, hint: String, modifier: Modifier = Modifier) {
     val look = LocalSakina.current.look
