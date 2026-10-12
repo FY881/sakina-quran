@@ -53,6 +53,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -150,7 +152,8 @@ fun AzkarHome(prefs: Prefs, repo: SettingsRepo, user: UserData, onBack: () -> Un
     }
     LazyColumn(contentPadding = PaddingValues(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
-            BackHeader(t("الأذكار", "Azkar"), onBack, subtitle = t("سلسلتك: ${num(user.azkarStreak(today), true)} يوم • حصن المسلم كاملًا", "Streak: ${user.azkarStreak(today)} days • complete Hisn al-Muslim")) {
+            val streak = user.azkarStreak(today)
+            BackHeader(t("الأذكار", "Azkar"), onBack, subtitle = if (streak == 0) t("ابدأ سلسلتك اليوم بأذكار الصباح أو المساء", "Start your streak today with the morning or evening azkar") else t("سلسلتك: ${num(streak, true)} يوم متتالٍ", "Streak: $streak days in a row")) {
                 IconButton(onClick = { onOpen("azkar_search") }) { Icon(Icons.Outlined.Search, t("بحث", "Search"), tint = MaterialTheme.colorScheme.onBackground) }
                 IconButton(onClick = { onOpen("azkar_mine") }) { Icon(Icons.Outlined.FavoriteBorder, t("المفضلة", "Favourites"), tint = MaterialTheme.colorScheme.onBackground) }
             }
@@ -258,7 +261,7 @@ private fun ReminderCard(prefs: Prefs, repo: SettingsRepo) {
                     Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                     Muted(sub)
                 }
-                Switch(on, { toggle(kind, it) }, colors = SwitchDefaults.colors(checkedTrackColor = look.cta, checkedThumbColor = look.onCta))
+                Switch(on, { toggle(kind, it) }, colors = switchColors())
             }
         }
         row("morning", Ico.SUNRISE, t("أذكار الصباح", "Morning azkar"), digits(t("بعد الفجر بـ ${prefs.azMorningMin} دقيقة (قبل الشروق)", "${prefs.azMorningMin} min after Fajr (before sunrise)"), ar), prefs.azMorning)
@@ -389,17 +392,25 @@ fun AzkarSessionScreen(
                 }
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(end = 8.dp)) {
                     VSpace(6.dp)
-                    Text(d.text, fontFamily = QuranFont, fontSize = if (d.text.length > 700) 20.sp else 23.sp, lineHeight = if (d.text.length > 700) 38.sp else 44.sp, color = look.onCard, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    val short = d.text.length < 160
+                    if (short) VSpace(36.dp)
+                    Text(
+                        d.text, fontFamily = QuranFont, fontSize = when { short -> 30.sp; d.text.length > 700 -> 20.sp; else -> 23.sp },
+                        lineHeight = when { short -> 56.sp; d.text.length > 700 -> 38.sp; else -> 44.sp }, color = look.onCard, textAlign = TextAlign.Center,
+                        style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (short) VSpace(28.dp)
                     if (d.virtue.isNotBlank()) {
                         VSpace(10.dp)
                         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(look.cta.copy(alpha = .12f)).padding(12.dp)) {
                             Text(t("الفضل", "Virtue"), style = MaterialTheme.typography.labelLarge, color = look.cta)
-                            Text(d.virtue, style = MaterialTheme.typography.bodyMedium, color = look.onCard)
+                            ArabicText(d.virtue, style = MaterialTheme.typography.bodyMedium, color = look.onCard)
                         }
                     }
                     if (d.ref.isNotBlank()) {
                         VSpace(8.dp)
-                        Muted(t("المصدر: ", "Source: ") + d.ref)
+                        Text(t("المصدر", "Source"), style = MaterialTheme.typography.labelMedium, color = look.cta)
+                        ArabicText(d.ref)
                     }
                     if (d.sura > 0) {
                         VSpace(6.dp)
@@ -497,7 +508,7 @@ fun HisnScreen(initialCat: String?, onBack: () -> Unit, onOpen: (String) -> Unit
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(c.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        ArabicText(c.title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = look.onCard, maxLines = 2)
                         Muted(digits(t("${c.items.size} • ${AzCat.of(c.index)?.ar ?: ""}", "${c.items.size} • ${AzCat.of(c.index)?.en ?: ""}"), ar))
                     }
                     AzCat.of(c.index)?.let { PackIcon(it.ico, 28.dp) }
@@ -523,7 +534,7 @@ fun AzkarSearchScreen(initial: String, onBack: () -> Unit, onOpen: (String) -> U
             SCard(onClick = { onOpen(openRouteFor(azkar!!, d)) }, padding = PaddingValues(12.dp)) {
                 Text(where, style = MaterialTheme.typography.labelLarge, color = look.cta, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 VSpace(4.dp)
-                Text(d.text, fontFamily = QuranFont, fontSize = 18.sp, lineHeight = 34.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text(d.text, fontFamily = QuranFont, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), fontSize = 18.sp, lineHeight = 34.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
         }
         if (q.trim().length < 2) item {
@@ -569,12 +580,27 @@ fun AzkarMineScreen(user: UserData, onBack: () -> Unit, onOpen: (String) -> Unit
         }
         if (tab == 0) {
             if (favs.isNotEmpty()) item { CtaPill(t("اقرأها كلها بالعدّاد", "Read all with the counter"), Modifier.fillMaxWidth()) { onOpen("azkar/fav") } }
-            else item { SCard { Muted(t("اضغط ♡ على أي ذكر أو دعاء ليظهر هنا.", "Tap ♡ on any dhikr or dua to keep it here.")) } }
+            else item {
+                SCard {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(t("لا مفضلة بعد", "No favourites yet"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Muted(t("اضغط ♡ على أي ذكر أو دعاء أو آية ليجتمع هنا، ثم اقرأها كلها بالعدّاد.", "Tap ♡ on any dhikr, dua or ayah to collect it here, then read them all with the counter."))
+                        }
+                        PackIcon(Ico.STAR, 56.dp)
+                    }
+                    VSpace(12.dp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CtaPill(t("أذكار الصباح", "Morning azkar")) { onOpen("azkar/morning") }
+                        GhostPill(t("حصن المسلم", "Hisn al-Muslim")) { onOpen("hisn") }
+                    }
+                }
+            }
             items(favs, key = { it.id }) { d ->
                 SCard(onClick = { azkar?.let { onOpen(openRouteFor(it, d)) } }, padding = PaddingValues(start = 12.dp, end = 4.dp, top = 10.dp, bottom = 10.dp)) {
                     Row(verticalAlignment = Alignment.Top) {
                         Column(Modifier.weight(1f)) {
-                            Text(d.text, fontFamily = QuranFont, fontSize = 18.sp, lineHeight = 34.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                            Text(d.text, fontFamily = QuranFont, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), fontSize = 18.sp, lineHeight = 34.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
                             if (d.ref.isNotBlank()) Muted(d.ref, Modifier.padding(top = 2.dp))
                         }
                         IconButton(onClick = { onFav(d.id) }) { Icon(Icons.Outlined.Favorite, t("إزالة", "Remove"), tint = androidx.compose.ui.graphics.Color(0xFFEF4444)) }
@@ -602,7 +628,7 @@ fun AzkarMineScreen(user: UserData, onBack: () -> Unit, onOpen: (String) -> Unit
                 SCard(padding = PaddingValues(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(o.text, fontFamily = QuranFont, fontSize = 18.sp, lineHeight = 34.sp)
+                            Text(o.text, fontFamily = QuranFont, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), fontSize = 18.sp, lineHeight = 34.sp)
                             Muted(countLabel(o.count, ar))
                         }
                         IconButton(onClick = { onDelete(o.id) }) { Icon(Icons.Outlined.Delete, t("حذف", "Delete"), tint = look.onCardMuted) }
