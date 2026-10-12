@@ -24,6 +24,34 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+/** The visual theme family (DESIGN_PLAN §2). Light/dark is chosen separately by [ThemeMode]. */
+enum class AppTheme(val ar: String, val en: String, val hasLight: Boolean = true, val hasDark: Boolean = true) {
+    CLASSIC_TEAL("سكينة الكلاسيكي", "Sakina Classic"),
+    LIQUID_GLASS("زجاج سائل", "Liquid Glass"),
+    MADINAH_NIGHT("ليل المدينة", "Madinah Night", hasLight = false),
+    EMERALD_ANDALUS("زمرد الأندلس", "Emerald Andalus"),
+    DESERT_SAND("رمال الصحراء", "Desert Sand"),
+    OTTOMAN_RUBY("ياقوت عثماني", "Ottoman Ruby"),
+    ROSE_DAWN("فجر وردي", "Rose Dawn"),
+    AMOLED("أسود AMOLED", "AMOLED Black", hasLight = false),
+    HIGH_CONTRAST("تباين عالٍ", "High Contrast"),
+    DYNAMIC("ألوان جهازك", "Material You"),
+    SEASONAL("موسمي تلقائي", "Seasonal (auto)"),
+}
+
+/** How much glass: OFF = solid surfaces (fastest), LIGHT = soft blur, FULL = deep frosted glass. */
+enum class GlassLevel(val ar: String, val en: String) { OFF("بدون", "Off"), LIGHT("خفيف", "Light"), FULL("كامل", "Full") }
+
+/** Selectable icon packs. AUTO picks the best pack for the current theme. */
+enum class IconPackId(val ar: String, val en: String, val dir: String) {
+    AUTO("تلقائي حسب الثيم", "Auto (match theme)", ""),
+    FLUENT_3D("ثلاثي الأبعاد واقعي", "Realistic 3D", "fluent3d"),
+    FLUENT_COLOR("ملوّن ناعم", "Soft color", "fluentcolor"),
+    FLUENT_FLAT("مسطّح", "Flat", "fluentflat"),
+    FLUENT_MONO("أحادي بلون الثيم", "Mono (theme tint)", "fluentmono"),
+    NOTO("نوتو", "Noto", "noto"),
+}
+
 /** How a prayer is announced. */
 enum class AlertMode { OFF, SILENT, NOTIFY, ADHAN }
 
@@ -37,7 +65,7 @@ val VOICES = listOf(
 )
 
 data class Prefs(
-    val theme: ThemeMode = ThemeMode.SYSTEM,
+    val theme: ThemeMode = ThemeMode.DARK,
     val onboarded: Boolean = false,
     val place: Place = PrayerEngine.CAIRO,
     val placeSet: Boolean = false,
@@ -48,6 +76,11 @@ data class Prefs(
     val fajrVoice: Int = 1,
     val preMin: Int = 10,
     val jumuahReminder: Boolean = true,
+    val appTheme: AppTheme = AppTheme.CLASSIC_TEAL,
+    /** ARGB accent override; 0 = theme default. */
+    val accent: Int = 0,
+    val glass: GlassLevel = GlassLevel.FULL,
+    val iconPack: IconPackId = IconPackId.AUTO,
 ) {
     companion object {
         val defaultModes = mapOf(
@@ -74,6 +107,10 @@ class SettingsRepo(context: Context) {
         val fajrVoice = intPreferencesKey("fajrVoice")
         val preMin = intPreferencesKey("preMin")
         val jumuah = booleanPreferencesKey("jumuah")
+        val appTheme = stringPreferencesKey("appTheme")
+        val accent = intPreferencesKey("accent")
+        val glass = stringPreferencesKey("glass")
+        val iconPack = stringPreferencesKey("iconPack")
     }
 
     private inline fun <reified E : Enum<E>> en(v: String?, d: E): E = runCatching { enumValueOf<E>(v!!) }.getOrDefault(d)
@@ -86,7 +123,7 @@ class SettingsRepo(context: Context) {
         val modes = Prefs.defaultModes.toMutableMap()
         p[K.modes]?.split(',')?.forEachIndexed { i, s -> if (i < 6) modes[Prayer.entries[i]] = en(s, AlertMode.ADHAN) }
         return Prefs(
-            theme = en(p[K.theme], ThemeMode.SYSTEM),
+            theme = en(p[K.theme], ThemeMode.DARK),
             onboarded = p[K.onboarded] ?: false,
             place = place ?: PrayerEngine.CAIRO,
             placeSet = place != null,
@@ -97,6 +134,10 @@ class SettingsRepo(context: Context) {
             fajrVoice = p[K.fajrVoice] ?: 1,
             preMin = p[K.preMin] ?: 10,
             jumuahReminder = p[K.jumuah] ?: true,
+            appTheme = en(p[K.appTheme], AppTheme.CLASSIC_TEAL),
+            accent = p[K.accent] ?: 0,
+            glass = en(p[K.glass], GlassLevel.FULL),
+            iconPack = en(p[K.iconPack], IconPackId.AUTO),
         )
     }
 
@@ -132,4 +173,17 @@ class SettingsRepo(context: Context) {
     suspend fun setFajrVoice(id: Int) = edit { it[K.fajrVoice] = id }
     suspend fun setPreMin(m: Int) = edit { it[K.preMin] = m }
     suspend fun setJumuah(b: Boolean) = edit { it[K.jumuah] = b }
+    suspend fun setAppTheme(t: AppTheme) = edit { it[K.appTheme] = t.name }
+    suspend fun setAccent(argb: Int) = edit { it[K.accent] = argb }
+    suspend fun setGlass(g: GlassLevel) = edit { it[K.glass] = g.name }
+    suspend fun setIconPack(p: IconPackId) = edit { it[K.iconPack] = p.name }
+
+    /** Debug/CI only: apply several values at once (used by screenshot automation). */
+    suspend fun debugApply(theme: String?, mode: String?, glass: String?, icons: String?, onboarded: Boolean?) = edit {
+        theme?.let { v -> it[K.appTheme] = en(v, AppTheme.CLASSIC_TEAL).name }
+        mode?.let { v -> it[K.theme] = en(v, ThemeMode.SYSTEM).name }
+        glass?.let { v -> it[K.glass] = en(v, GlassLevel.FULL).name }
+        icons?.let { v -> it[K.iconPack] = en(v, IconPackId.AUTO).name }
+        onboarded?.let { v -> it[K.onboarded] = v }
+    }
 }
