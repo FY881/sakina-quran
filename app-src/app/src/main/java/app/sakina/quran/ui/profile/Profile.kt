@@ -140,7 +140,7 @@ fun ProfileScreen(user: UserData, prefs: Prefs, onBack: () -> Unit, onOpen: (Str
                 Text(t("أهداف اليوم", "Today's goals"), style = MaterialTheme.typography.titleMedium)
                 VSpace(8.dp)
                 Goal(Ico.MOSQUE, t("الصلوات الخمس", "Five prayers"), user.prayedOn(today), 5)
-                Goal(Ico.TASBIH, t("١٠٠ تسبيحة", "100 tasbih"), user.tasbihOn(today).coerceAtMost(100), 100)
+                Goal(Ico.TASBIH, t("١٠٠ تسبيحة", "100 tasbih"), (user.tasbihOn(today) + user.tasbihCount).coerceAtMost(100), 100)
                 Goal(Ico.QURAN, t("ورد القرآن", "Quran portion"), if (user.lastSura > 0) 1 else 0, 1)
             }
         }
