@@ -81,6 +81,13 @@ data class Prefs(
     val accent: Int = 0,
     val glass: GlassLevel = GlassLevel.FULL,
     val iconPack: IconPackId = IconPackId.AUTO,
+    /** Azkar reminders (A1): morning = Fajr + [azMorningMin] (before sunrise), evening = Asr + [azEveningMin] (before Maghrib), sleep at [azSleepAt] minutes after midnight. */
+    val azMorning: Boolean = false,
+    val azEvening: Boolean = false,
+    val azSleep: Boolean = false,
+    val azMorningMin: Int = 20,
+    val azEveningMin: Int = 30,
+    val azSleepAt: Int = 22 * 60 + 30,
 ) {
     companion object {
         val defaultModes = mapOf(
@@ -111,6 +118,12 @@ class SettingsRepo(context: Context) {
         val accent = intPreferencesKey("accent")
         val glass = stringPreferencesKey("glass")
         val iconPack = stringPreferencesKey("iconPack")
+        val azM = booleanPreferencesKey("azM")
+        val azE = booleanPreferencesKey("azE")
+        val azS = booleanPreferencesKey("azS")
+        val azMMin = intPreferencesKey("azMMin")
+        val azEMin = intPreferencesKey("azEMin")
+        val azSAt = intPreferencesKey("azSAt")
     }
 
     private inline fun <reified E : Enum<E>> en(v: String?, d: E): E = runCatching { enumValueOf<E>(v!!) }.getOrDefault(d)
@@ -138,6 +151,12 @@ class SettingsRepo(context: Context) {
             accent = p[K.accent] ?: 0,
             glass = en(p[K.glass], GlassLevel.FULL),
             iconPack = en(p[K.iconPack], IconPackId.AUTO),
+            azMorning = p[K.azM] ?: false,
+            azEvening = p[K.azE] ?: false,
+            azSleep = p[K.azS] ?: false,
+            azMorningMin = p[K.azMMin] ?: 20,
+            azEveningMin = p[K.azEMin] ?: 30,
+            azSleepAt = p[K.azSAt] ?: (22 * 60 + 30),
         )
     }
 
@@ -177,6 +196,16 @@ class SettingsRepo(context: Context) {
     suspend fun setAccent(argb: Int) = edit { it[K.accent] = argb }
     suspend fun setGlass(g: GlassLevel) = edit { it[K.glass] = g.name }
     suspend fun setIconPack(p: IconPackId) = edit { it[K.iconPack] = p.name }
+
+    suspend fun setAzkarReminder(kind: String, on: Boolean) = edit {
+        val key = when (kind) { "morning" -> K.azM; "evening" -> K.azE; else -> K.azS }
+        it[key] = on
+    }
+    suspend fun setAzkarOffsets(morningMin: Int? = null, eveningMin: Int? = null, sleepAt: Int? = null) = edit {
+        morningMin?.let { v -> it[K.azMMin] = v.coerceIn(0, 120) }
+        eveningMin?.let { v -> it[K.azEMin] = v.coerceIn(0, 180) }
+        sleepAt?.let { v -> it[K.azSAt] = ((v % 1440) + 1440) % 1440 }
+    }
 
     /** Debug/CI only: apply several values at once (used by screenshot automation). */
     suspend fun debugApply(theme: String?, mode: String?, glass: String?, icons: String?, onboarded: Boolean?) = edit {
