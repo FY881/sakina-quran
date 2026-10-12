@@ -1,10 +1,13 @@
 package app.sakina.quran
 
+import android.graphics.Color
 import android.os.Bundle
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,8 +19,10 @@ import app.sakina.quran.data.Prefs
 import app.sakina.quran.data.SettingsRepo
 import app.sakina.quran.data.UserRepo
 import app.sakina.quran.ui.AppRoot
+import app.sakina.quran.ui.theme.LocalSakina
 import app.sakina.quran.ui.theme.SakinaTheme
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : AppCompatActivity() {
     private var ready by mutableStateOf(false)
@@ -31,9 +36,10 @@ class MainActivity : AppCompatActivity() {
         val user = UserRepo(applicationContext)
         val startRoute = if (BuildConfig.DEBUG) intent?.getStringExtra("route") else null
 
-        if (BuildConfig.DEBUG) applyDebugLanguage()
+        // Debug/CI only: write the extras synchronously so an activity recreation (e.g. from the
+        // language switch below) can never cancel them half-way.
+        if (BuildConfig.DEBUG) { runBlocking { applyDebugExtras(repo) }; applyDebugLanguage() }
         lifecycleScope.launch {
-            if (BuildConfig.DEBUG) applyDebugExtras(repo)
             user.ensureMemberSince()
             repo.now() // first load done → release splash
             ready = true
@@ -42,7 +48,14 @@ class MainActivity : AppCompatActivity() {
             val prefs: Prefs? by repo.prefs.collectAsStateWithLifecycle(initialValue = null)
             val p = prefs
             if (ready && p != null) {
-                SakinaTheme(p) { AppRoot(repo, user, p, startRoute) }
+                SakinaTheme(p) {
+                    val dark = LocalSakina.current.look.dark
+                    LaunchedEffect(dark) {
+                        val bars = if (dark) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                        enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+                    }
+                    AppRoot(repo, user, p, startRoute)
+                }
             }
         }
     }
