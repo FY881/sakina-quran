@@ -19,6 +19,8 @@ object Notifs {
     const val CH_SILENT = "prayer_silent"
     const val CH_REMIND = "prayer_remind"
     const val CH_FALLBACK = "adhan_fallback" // takbeer sound when the player service may not start
+    const val CH_AZKAR = "azkar_remind"
+    const val ID_AZKAR = 4400
     const val ID_ADHAN = 4100
     const val ID_PRAYER = 4200
     const val ID_REMIND = 4300
@@ -39,6 +41,9 @@ object Notifs {
                 setSound(null, null); enableVibration(false)
             },
             NotificationChannel(CH_REMIND, t("تذكير قبل الصلاة", "Reminder before prayer"), NotificationManager.IMPORTANCE_DEFAULT),
+            NotificationChannel(CH_AZKAR, t("تذكير الأذكار", "Azkar reminders"), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = t("أذكار الصباح والمساء والنوم في وقتها", "Morning, evening and sleep azkar on time")
+            },
             NotificationChannel(CH_FALLBACK, t("تكبير احتياطي", "Takbeer fallback"), NotificationManager.IMPORTANCE_HIGH).apply {
                 setSound(Uri.parse("android.resource://${c.packageName}/${R.raw.takbeer}"), attrs)
             },
@@ -50,7 +55,14 @@ object Notifs {
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
-    fun post(c: Context, id: Int, channel: String, title: String, text: String) {
+    /** Opens the app at an in-app route (allow-listed in MainActivity), e.g. "azkar/morning". */
+    fun openRoute(c: Context, route: String): PendingIntent = PendingIntent.getActivity(
+        c, 100 + (route.hashCode() and 0xFFF), Intent(c, MainActivity::class.java).putExtra("open", route)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    )
+
+    fun post(c: Context, id: Int, channel: String, title: String, text: String, open: String? = null) {
         ensure(c)
         val n = NotificationCompat.Builder(c, channel)
             .setSmallIcon(R.drawable.ic_stat_sakina)
@@ -58,7 +70,7 @@ object Notifs {
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(openApp(c))
+            .setContentIntent(if (open != null) openRoute(c, open) else openApp(c))
             .setAutoCancel(true)
             .build()
         runCatching { NotificationManagerCompat.from(c).notify(id, n) }
