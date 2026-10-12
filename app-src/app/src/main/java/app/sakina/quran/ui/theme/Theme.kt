@@ -1,19 +1,30 @@
 package app.sakina.quran.ui.theme
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import app.sakina.quran.R
+import app.sakina.quran.data.GlassLevel
+import app.sakina.quran.data.IconPackId
+import app.sakina.quran.data.Prefs
 import app.sakina.quran.data.ThemeMode
+import app.sakina.quran.prayer.Hijri
+import app.sakina.quran.ui.theme.Looks.withAccent
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.rememberHazeState
 
 val Gold = Color(0xFFE9C46A)
 val DeepGreen = Color(0xFF0E5E4E)
@@ -26,50 +37,56 @@ val Plex = FontFamily(
 )
 val QuranFont = FontFamily(Font(R.font.amiri_quran))
 
-private val Light = lightColorScheme(
-    primary = DeepGreen, onPrimary = Color.White,
-    primaryContainer = Color(0xFFCDEBE2), onPrimaryContainer = Color(0xFF00201A),
-    secondary = Color(0xFF9A7B2F), onSecondary = Color.White,
-    secondaryContainer = Color(0xFFF7E7BE), onSecondaryContainer = Color(0xFF2E2300),
-    background = Color(0xFFF6F3EA), onBackground = Color(0xFF1B1C1A),
-    surface = Color(0xFFFBF9F3), onSurface = Color(0xFF1B1C1A),
-    surfaceVariant = Color(0xFFE6E2D6), onSurfaceVariant = Color(0xFF4A4740),
-    surfaceContainer = Color(0xFFF0ECE1), surfaceContainerHigh = Color(0xFFEAE6DA),
-    outline = Color(0xFF7B776C),
+/** The resolved visual style available to every composable. */
+@Immutable
+data class SakinaStyle(
+    val look: Look,
+    val glass: GlassLevel,
+    /** Real backdrop blur is active (glass on, API 31+ where Haze enables it). */
+    val blur: Boolean,
+    val haze: HazeState,
+    val pack: IconPackId,
 )
-private val Dark = darkColorScheme(
-    primary = Color(0xFF7FD6BF), onPrimary = Color(0xFF00382D),
-    primaryContainer = Color(0xFF0E5E4E), onPrimaryContainer = Color(0xFFCDEBE2),
-    secondary = Gold, onSecondary = Color(0xFF3D2E00),
-    secondaryContainer = Color(0xFF574400), onSecondaryContainer = Color(0xFFFFE08E),
-    background = Color(0xFF0F1614), onBackground = Color(0xFFE1E3DF),
-    surface = Color(0xFF141C1A), onSurface = Color(0xFFE1E3DF),
-    surfaceVariant = Color(0xFF2B3532), onSurfaceVariant = Color(0xFFBFC9C4),
-    surfaceContainer = Color(0xFF1A2321), surfaceContainerHigh = Color(0xFF212B28),
-    outline = Color(0xFF89938F),
-)
+
+val LocalSakina = staticCompositionLocalOf<SakinaStyle> { error("SakinaTheme missing") }
 
 private fun typography(): Typography {
     val b = Typography()
     fun TextStyle.p() = copy(fontFamily = Plex)
     return Typography(
-        displayLarge = b.displayLarge.p(), displayMedium = b.displayMedium.p(), displaySmall = b.displaySmall.p(),
-        headlineLarge = b.headlineLarge.p(), headlineMedium = b.headlineMedium.p(), headlineSmall = b.headlineSmall.p(),
+        displayLarge = b.displayLarge.p(), displayMedium = b.displayMedium.p(), displaySmall = b.displaySmall.p().copy(fontWeight = FontWeight.Bold),
+        headlineLarge = b.headlineLarge.p().copy(fontWeight = FontWeight.Bold), headlineMedium = b.headlineMedium.p().copy(fontWeight = FontWeight.SemiBold),
+        headlineSmall = b.headlineSmall.p().copy(fontWeight = FontWeight.SemiBold),
         titleLarge = b.titleLarge.p().copy(fontWeight = FontWeight.SemiBold),
         titleMedium = b.titleMedium.p().copy(fontWeight = FontWeight.SemiBold),
-        titleSmall = b.titleSmall.p(),
+        titleSmall = b.titleSmall.p().copy(fontWeight = FontWeight.Medium),
         bodyLarge = b.bodyLarge.p().copy(lineHeight = 26.sp), bodyMedium = b.bodyMedium.p().copy(lineHeight = 22.sp),
         bodySmall = b.bodySmall.p(),
-        labelLarge = b.labelLarge.p(), labelMedium = b.labelMedium.p(), labelSmall = b.labelSmall.p(),
+        labelLarge = b.labelLarge.p().copy(fontWeight = FontWeight.SemiBold), labelMedium = b.labelMedium.p(), labelSmall = b.labelSmall.p(),
     )
 }
 
+private val Typo = typography()
+
+/** Resolve a [Look] for [prefs] (also used by the theme picker's live previews). */
 @Composable
-fun SakinaTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
-    val dark = when (mode) {
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
+fun resolveLook(prefs: Prefs, theme: app.sakina.quran.data.AppTheme = prefs.appTheme, mode: ThemeMode = prefs.theme): Look {
+    val ctx = LocalContext.current
+    val sysDark = isSystemInDarkTheme()
+    val dark = when (mode) { ThemeMode.SYSTEM -> sysDark; ThemeMode.LIGHT -> false; ThemeMode.DARK -> true }
+    val (m, d) = remember(prefs.hijriAdj) { Hijri.monthDay(System.currentTimeMillis(), prefs.hijriAdj) }
+    return remember(theme, dark, prefs.accent, m, d) { Looks.of(theme, dark, ctx, m, d).withAccent(prefs.accent) }
+}
+
+fun IconPackId.resolve(look: Look): IconPackId = if (this == IconPackId.AUTO) look.autoPack else this
+
+@Composable
+fun SakinaTheme(prefs: Prefs, content: @Composable () -> Unit) {
+    val look = resolveLook(prefs)
+    val blur = prefs.glass != GlassLevel.OFF && Build.VERSION.SDK_INT >= 32
+    val haze = rememberHazeState(blurEnabled = blur)
+    val style = SakinaStyle(look, prefs.glass, blur, haze, prefs.iconPack.resolve(look))
+    CompositionLocalProvider(LocalSakina provides style) {
+        MaterialTheme(colorScheme = look.scheme, typography = Typo, content = content)
     }
-    MaterialTheme(colorScheme = if (dark) Dark else Light, typography = typography(), content = content)
 }
