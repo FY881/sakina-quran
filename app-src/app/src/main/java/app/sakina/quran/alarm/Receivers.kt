@@ -26,6 +26,15 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(c: Context, intent: Intent) = async {
         val repo = SettingsRepo(c)
         val prefs = repo.now()
+        if (intent.action == Scheduler.ACTION_AZKAR) {
+            val kind = intent.getStringExtra("azkar")
+            val fire = intent.getLongExtra("fire", 0L)
+            if (kind != null && kotlin.math.abs(System.currentTimeMillis() - fire) < 20 * 60_000L) {
+                Notifs.post(c, Notifs.ID_AZKAR, Notifs.CH_AZKAR, Texts.azkarTitle(c, kind), Texts.azkarText(c, kind), open = "azkar/$kind")
+            }
+            Scheduler.rescheduleAzkar(c, prefs)
+            return@async
+        }
         val prayer = runCatching { Prayer.valueOf(intent.getStringExtra("prayer")!!) }.getOrNull()
         val at = intent.getLongExtra("at", 0L)
         val kind = intent.getIntExtra("kind", 0)
