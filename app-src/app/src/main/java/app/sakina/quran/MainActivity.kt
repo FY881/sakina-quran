@@ -1,7 +1,9 @@
 package app.sakina.quran
 
 import android.graphics.Color
+import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,8 +26,33 @@ import app.sakina.quran.ui.theme.SakinaTheme
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
+/** Tasbih registers a handler while open so the volume keys count (TS01). */
+object VolumeKeys {
+    @Volatile var handler: (() -> Unit)? = null
+}
+
 class MainActivity : AppCompatActivity() {
     private var ready by mutableStateOf(false)
+    /** In-app route requested by a notification (allow-listed). */
+    private var openRoute by mutableStateOf<String?>(null)
+
+    private fun routeFrom(i: Intent?): String? = i?.getStringExtra("open")?.takeIf { r ->
+        r.startsWith("azkar/") || r in setOf("azkar", "tasbih", "prayers", "quran", "duas", "ruqyah")
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        routeFrom(intent)?.let { openRoute = it }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val h = VolumeKeys.handler
+        if (h != null && (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) h()
+            return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
@@ -35,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         val repo = SettingsRepo(applicationContext)
         val user = UserRepo(applicationContext)
         val startRoute = if (BuildConfig.DEBUG) intent?.getStringExtra("route") else null
+        if (savedInstanceState == null) openRoute = routeFrom(intent)
 
         // Debug/CI only: write the extras synchronously so an activity recreation (e.g. from the
         // language switch below) can never cancel them half-way.
@@ -54,7 +82,7 @@ class MainActivity : AppCompatActivity() {
                         val bars = if (dark) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                         enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
                     }
-                    AppRoot(repo, user, p, startRoute)
+                    AppRoot(repo, user, p, startRoute, openRoute = openRoute, onOpened = { openRoute = null })
                 }
             }
         }
