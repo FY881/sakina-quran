@@ -16,8 +16,57 @@ import java.time.ZonedDateTime
 /** One upcoming alert. kind: 0 = at prayer time, 1 = reminder before it. */
 data class Event(val prayer: Prayer, val kind: Int, val at: ZonedDateTime, val prayerAt: ZonedDateTime)
 
+/** An azkar reminder: kind = "morning" | "evening" | "sleep". */
+data class AzkarEvent(val kind: String, val at: ZonedDateTime)
+
 object Scheduler {
     const val ACTION = "app.sakina.quran.PRAYER_ALARM"
+    const val ACTION_AZKAR = "app.sakina.quran.AZKAR_ALARM"
+
+    /**
+     * Azkar reminders in the next ~2 days, sorted. Morning = Fajr + offset (kept before sunrise),
+     * evening = Asr + offset (kept before Maghrib), sleep = fixed local time. Pure function: unit-tested.
+     */
+    fun azkarUpcoming(p: Prefs, now: ZonedDateTime): List<AzkarEvent> {
+        if (!p.azMorning && !p.azEvening && !p.azSleep) return emptyList()
+        val local = now.withZoneSameInstant(p.place.zone)
+        val out = ArrayList<AzkarEvent>()
+        for (d in 0..2) {
+            val date = local.toLocalDate().plusDays(d.toLong())
+            val day = PrayerEngine.day(p.place, date, p.calc)
+            if (p.azMorning) {
+                val fajr = day.times.getValue(Prayer.FAJR); val sunrise = day.times.getValue(Prayer.SUNRISE)
+                var t = fajr.plusMinutes(p.azMorningMin.toLong())
+                if (!t.isBefore(sunrise.minusMinutes(5))) t = sunrise.minusMinutes(15).let { x -> if (x.isAfter(fajr)) x else fajr }
+                out += AzkarEvent("morning", t)
+            }
+            if (p.azEvening) {
+                val asr = day.times.getValue(Prayer.ASR); val maghrib = day.times.getValue(Prayer.MAGHRIB)
+                var t = asr.plusMinutes(p.azEveningMin.toLong())
+                if (!t.isBefore(maghrib.minusMinutes(5))) t = maghrib.minusMinutes(20).let { x -> if (x.isAfter(asr)) x else asr }
+                out += AzkarEvent("evening", t)
+            }
+            if (p.azSleep) out += AzkarEvent("sleep", date.atStartOfDay(p.place.zone).plusMinutes(p.azSleepAt.toLong()))
+        }
+        return out.filter { it.at.isAfter(local) }.sortedBy { it.at }
+    }
+
+    /** Schedules the next azkar reminder (separate PendingIntent from prayer alerts). */
+    fun rescheduleAzkar(c: Context, p: Prefs, now: ZonedDateTime = ZonedDateTime.now()) {
+        val am = c.getSystemService(AlarmManager::class.java)
+        val ev = azkarUpcoming(p, now).firstOrNull()
+        val pi = PendingIntent.getBroadcast(
+            c, 9, Intent(c, AlarmReceiver::class.java).setAction(ACTION_AZKAR).apply {
+                if (ev != null) { putExtra("azkar", ev.kind); putExtra("fire", ev.at.toInstant().toEpochMilli()) }
+            },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        am.cancel(pi)
+        if (ev == null) return
+        val t = ev.at.toInstant().toEpochMilli()
+        if (canExact(c)) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, t, pi)
+        else am.setWindow(AlarmManager.RTC_WAKEUP, t, 5 * 60_000L, pi)
+    }
 
     /** All alerts in the next ~2 days, sorted. Pure function: unit-tested. */
     fun upcoming(p: Prefs, now: ZonedDateTime): List<Event> {
@@ -46,6 +95,7 @@ object Scheduler {
 
     /** Schedules only the next alert; each firing schedules the following one. */
     fun reschedule(c: Context, p: Prefs, now: ZonedDateTime = ZonedDateTime.now()) {
+        runCatching { rescheduleAzkar(c, p, now) }
         val am = c.getSystemService(AlarmManager::class.java)
         val ev = upcoming(p, now).firstOrNull()
         val pi = PendingIntent.getBroadcast(
