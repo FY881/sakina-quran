@@ -38,6 +38,14 @@ object Tajweed {
     private val QALQALAH = "قطبجد".toSet()
     private val HAMZAS = setOf('ء', 'أ', 'إ', 'ؤ', 'ئ', '\u0654')
 
+    /** Display-only: no-break space before each waqf mark (U+06D6–U+06DC) so it never wraps away from its word. Same length. */
+    fun glueWaqf(text: String): String {
+        if (text.indexOf(' ') < 0) return text
+        val c = text.toCharArray()
+        for (i in 0 until c.size - 1) if (c[i] == ' ' && c[i + 1] in '\u06D6'..'\u06DC') c[i] = '\u00A0'
+        return String(c)
+    }
+
     fun isLetter(c: Char) = c in '\u0621'..'\u064A' || c == WASL
     /** Marks that belong to the preceding letter (harakat, sukun, shaddah, small letters, Quranic annotation signs). */
     fun isMark(c: Char) = c in '\u064B'..'\u065F' || c == '\u0670' || c in '\u06DF'..'\u06E8' || c in '\u06EA'..'\u06ED' || c == '\u0640'
