@@ -49,7 +49,7 @@ class QuranQ2Test {
         val t = Quran.parseTanzil(String(b, Charsets.UTF_8), q.suras)
         assertTrue(t.all { it.isNotBlank() })
         assertEquals("\u0642\u064f\u0644\u0652 \u0647\u064f\u0648\u064e \u0627\u0644\u0644\u0651\u064e\u0647\u064f \u0623\u064e\u062d\u064e\u062f\u064c", MushafLayout.ayahText(q, 112, 1, t)) // Tanzil order: shadda before fatha
-        assertTrue(MushafLayout.ayahText(q, 97, 1, t).startsWith("إِنَّا"))
+        assertTrue(MushafLayout.ayahText(q, 97, 1, t).startsWith("\u0625\u0650\u0646\u0651\u064e\u0627")) // إِنَّا, Tanzil order
         assertTrue(MushafLayout.ayahText(q, 9, 1, t).startsWith("بَرَاءَةٌ"))
     }
 
