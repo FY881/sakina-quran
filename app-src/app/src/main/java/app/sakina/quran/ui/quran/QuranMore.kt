@@ -169,8 +169,8 @@ fun TopicScreen(id: String, onBack: () -> Unit, onOpen: (String) -> Unit) {
             SCard(padding = PaddingValues(14.dp), onClick = { onOpen("reader/$s/$a") }) {
                 Text(suraRef(quran, s, a, ar), style = MaterialTheme.typography.labelLarge, color = look.cta)
                 VSpace(4.dp)
-                RtlBox { Text(quran.displayAyah(s, a), fontFamily = QuranFont, fontSize = 22.sp, lineHeight = 42.sp, modifier = Modifier.fillMaxWidth()) }
-                tr?.getOrNull(quran.global(s, a))?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = look.onCardMuted, modifier = Modifier.padding(top = 4.dp)) }
+                RtlBox { Text(glueWaqf(quran.displayAyah(s, a)), fontFamily = QuranFont, fontSize = 22.sp, lineHeight = 42.sp, modifier = Modifier.fillMaxWidth()) }
+                tr?.getOrNull(quran.global(s, a))?.let { Text(it, style = MaterialTheme.typography.bodyMedium.copy(textDirection = if (app.sakina.quran.quran.Editions.get(trId ?: "")?.rtl == true) androidx.compose.ui.text.style.TextDirection.Rtl else androidx.compose.ui.text.style.TextDirection.Ltr), color = look.onCardMuted, modifier = Modifier.padding(top = 4.dp)) }
             }
         }
         item { Muted(t("فهرس من إعداد سكينة؛ كل مرجع تم التحقق منه آليًا مقابل نص المصحف.", "Index prepared by Sakina; every reference was machine-checked against the Quran text."), Modifier.padding(8.dp)) }
@@ -327,7 +327,7 @@ private fun MarkRow(quran: app.sakina.quran.quran.Quran, r: String, extra: Strin
     val a = p.getOrNull(1)?.toIntOrNull()?.takeIf { it in 1..quran.suras[s - 1].ayas } ?: return
     SCard(padding = PaddingValues(12.dp), onClick = { onOpen("reader/$s/$a") }) {
         Text(suraRef(quran, s, a, ar), style = MaterialTheme.typography.labelLarge, color = look.cta)
-        RtlBox { Text(quran.displayAyah(s, a), fontFamily = QuranFont, fontSize = 20.sp, lineHeight = 38.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth()) }
+        RtlBox { Text(glueWaqf(quran.displayAyah(s, a)), fontFamily = QuranFont, fontSize = 20.sp, lineHeight = 38.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth()) }
         if (!extra.isNullOrBlank()) Muted(extra)
     }
 }
@@ -381,7 +381,8 @@ fun TajweedGuideScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                         val st = txt.lastIndexOf(' ', (sp.start - 1).coerceAtLeast(0)).let { if (it < 0) 0 else it + 1 }
                         val en = txt.indexOf(' ', (sp.end + 1).coerceAtMost(txt.length)).let { if (it < 0) txt.length else it }
                         val st2 = txt.lastIndexOf(' ', (st - 2).coerceAtLeast(0)).let { if (it < 0 || st == 0) st else it + 1 }
-                        val snippet = txt.substring(st2, en)
+                        // Trim any waqf mark / space left at either edge of the cut (they belong to the neighbouring word).
+                        val snippet = txt.substring(st2, en).trim { it == ' ' || it == '\u00A0' || it in '\u06D6'..'\u06DC' }
                         VSpace(6.dp)
                         RtlBox {
                             Text(ayahText(snippet, true, qu.prefs.palette, look.dark), fontFamily = QuranFont, fontSize = 26.sp, lineHeight = 48.sp, modifier = Modifier.fillMaxWidth())
