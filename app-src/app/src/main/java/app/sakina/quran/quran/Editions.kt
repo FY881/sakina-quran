@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
@@ -61,6 +62,18 @@ object Editions {
 
     fun downloadedBytes(ctx: Context, id: String): Long = file(ctx, id).takeIf { it.exists() }?.length() ?: 0L
 
+    /** Ids whose last load failed (cleared on retry / download). */
+    val failed: MutableSet<String> = java.util.Collections.synchronizedSet(HashSet())
+
+    fun cached(id: String): Array<String>? = cache[id]
+
+    /** Warms the cache in the background so the first ayah sheet / tafsir page opens instantly. */
+    private val warmScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default)
+    fun prewarm(ctx: Context, ids: List<String>) {
+        val app = ctx.applicationContext
+        ids.distinct().filter { it !in cache && available(app, it) }.forEach { id -> warmScope.launch { runCatching { load(app, id) } } }
+    }
+
     /** Loads an edition as a 6236-slot array (empty strings where missing). Keeps the 4 most recent in memory. */
     suspend fun load(ctx: Context, id: String): Array<String>? = lock.withLock {
         cache[id]?.let { v -> cache.remove(id); cache[id] = v; return@withLock v }
@@ -69,11 +82,12 @@ object Editions {
         val arr = withContext(Dispatchers.IO) {
             runCatching {
                 val content = if (ed.bundled) {
-                    java.util.zip.GZIPInputStream(ctx.assets.open("tafsir/$id.txt.gz")).use { String(it.readBytes(), Charsets.UTF_8) }
+                    String(Quran.assetBytes(ctx, "tafsir/$id.txt.gz"), Charsets.UTF_8)
                 } else file(ctx, id).takeIf { it.exists() }?.readText(Charsets.UTF_8) ?: return@runCatching null
                 Quran.parseTanzil(content, q.suras)
-            }.getOrNull()
-        } ?: return@withLock null
+            }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }.getOrNull()
+        } ?: run { failed += id; return@withLock null }
+        failed -= id
         cache[id] = arr
         while (cache.size > 4) cache.remove(cache.keys.first())
         arr
@@ -98,7 +112,7 @@ object Editions {
             val lines = content.lineSequence().count { it.isNotEmpty() && it[0] != '#' && it.count { ch -> ch == '|' } >= 2 }
             check(lines >= 6000) { "incomplete download ($lines ayat)" }
             file(ctx, id).writeText(content, Charsets.UTF_8)
-            lock.withLock { cache.remove(id) }
+            lock.withLock { cache.remove(id); failed -= id }
             onProgress(1f)
         }
     }
