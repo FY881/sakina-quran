@@ -103,7 +103,16 @@ val HL_DEFAULT_EN = listOf("Favourite", "Hope & mercy", "Reflect", "Dua", "To me
 fun legendLabel(p: ReaderPrefs, i: Int, ar: Boolean) = p.legend.getOrNull(i)?.takeIf { it.isNotBlank() } ?: if (ar) HL_DEFAULT_AR[i] else HL_DEFAULT_EN[i]
 
 /** Ayah text with optional tajweed colours (text unchanged; only colour spans are added). */
+/**
+ * Display-only: Tanzil writes a waqf mark (U+06D6–U+06DC) as its own token between spaces ("word ۚ word"),
+ * so the line breaker can strand the mark alone at the start/end of a line. Swapping the space BEFORE the
+ * mark for a no-break space keeps it with its word. Same length (offsets/highlights unchanged); the
+ * stored Quran text is never modified, and copy/share use the original text.
+ */
+fun glueWaqf(text: String): String = app.sakina.quran.quran.Tajweed.glueWaqf(text)
+
 fun ayahText(text: String, tajweed: Boolean, palette: Int, dark: Boolean): AnnotatedString = buildAnnotatedString {
+    val text = glueWaqf(text)
     append(text)
     if (tajweed) for (s in Tajweed.spans(text)) addStyle(SpanStyle(color = Color(Tajweed.color(s.rule, palette, dark))), s.start, s.end)
 }
