@@ -48,7 +48,7 @@ class QuranQ2Test {
         assertEquals(Quran.SIMPLE_MD5, Quran.md5(b))
         val t = Quran.parseTanzil(String(b, Charsets.UTF_8), q.suras)
         assertTrue(t.all { it.isNotBlank() })
-        assertEquals("قُلْ هُوَ اللَّهُ أَحَدٌ", MushafLayout.ayahText(q, 112, 1, t))
+        assertEquals("\u0642\u064f\u0644\u0652 \u0647\u064f\u0648\u064e \u0627\u0644\u0644\u0651\u064e\u0647\u064f \u0623\u064e\u062d\u064e\u062f\u064c", MushafLayout.ayahText(q, 112, 1, t)) // Tanzil order: shadda before fatha
         assertTrue(MushafLayout.ayahText(q, 97, 1, t).startsWith("إِنَّا"))
         assertTrue(MushafLayout.ayahText(q, 9, 1, t).startsWith("بَرَاءَةٌ"))
     }
@@ -121,7 +121,7 @@ class QuranQ2Test {
         assertTrue(k.any { it.first == TajRule.IKHFA && it.second.contains("ن") })          // مَن ذَا
         assertTrue(k.any { it.first == TajRule.IDGHAM_GHUNNAH })                             // سِنَةٌ وَلَا
         assertTrue(k.any { it.first == TajRule.IDGHAM_NO_GHUNNAH })                          // نَوْمٌ ۚ لَّهُۥ
-        assertTrue(k.any { it.first == TajRule.MADD_OBLIGATORY && it.second.contains("آ") }) // شَآءَ
+        assertTrue(k.any { it.first == TajRule.MADD_OBLIGATORY && it.second.contains('\u0653') }) // شَآءَ
         assertTrue(k.any { it.first == TajRule.MADD_PERMISSIBLE })                           // لَآ إِلَٰهَ
         assertTrue(k.any { it.first == TajRule.SILENT })
         assertTrue(rules(112, 1).any { it.first == TajRule.QALQALAH && it.second.startsWith("د") })
@@ -173,7 +173,7 @@ class QuranQ2Test {
         assertEquals(listOf(5, 4, 4, 4, 4), KhatmaPlan.afterPrayerSplit(21))
         assertEquals(21, KhatmaPlan.afterPrayerSplit(21).sum())
         assertEquals(listOf(1, 1, 0, 0, 0), KhatmaPlan.afterPrayerSplit(2))
-        assertEquals(d0.plusDays(29), KhatmaPlan.endForPace(d0, 1, 604, 21))
+        assertEquals(d0.plusDays(28), KhatmaPlan.endForPace(d0, 1, 604, 21)) // ceil(604/21)=29 days incl. start
         assertEquals(d0.plusDays(150), KhatmaPlan.endForPace(d0, 1, 604, 4))
         val k = Khatma("k", "x", 300, 604, d0, d0.plusDays(9))
         assertEquals(305, KhatmaPlan.total(k)); assertEquals(31, KhatmaPlan.todayTarget(k, d0)); assertEquals(300..330, KhatmaPlan.todayRange(k, d0))
