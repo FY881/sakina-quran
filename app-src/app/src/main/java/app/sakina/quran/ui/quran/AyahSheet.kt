@@ -163,11 +163,13 @@ fun AyahSheet(q: Quran, s: Int, a: Int, onDismiss: () -> Unit, onOpen: (String) 
             if (tx.length > 700) Text(t("اقرأ التفسير كاملًا", "Read the full tafsir"), color = look.cta, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 4.dp).press { onOpen("tafsir/$s/$a") })
             // Translations
             trIds.forEach { id -> key(id) {
-                val ed = Editions.get(id) ?: return@key
+                val ed = Editions.get(id)
                 val arr = rememberEdition(id)
-                VSpace(12.dp)
-                Text(if (ar) ed.nameAr else ed.nameEn, style = MaterialTheme.typography.titleSmall, color = look.cta)
-                Text(arr?.getOrNull(g).orEmpty(), style = MaterialTheme.typography.bodyMedium.copy(textDirection = if (ed.rtl) TextDirection.Rtl else TextDirection.Ltr), modifier = Modifier.fillMaxWidth())
+                if (ed != null) {
+                    VSpace(12.dp)
+                    Text(if (ar) ed.nameAr else ed.nameEn, style = MaterialTheme.typography.titleSmall, color = look.cta)
+                    Text(arr?.getOrNull(g).orEmpty(), style = MaterialTheme.typography.bodyMedium.copy(textDirection = if (ed.rtl) TextDirection.Rtl else TextDirection.Ltr), modifier = Modifier.fillMaxWidth())
+                }
             } }
             if (trIds.isEmpty()) {
                 VSpace(12.dp)
