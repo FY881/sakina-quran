@@ -306,7 +306,7 @@ fun PrayerScreen(
             SCard(padding = PaddingValues(6.dp)) {
                 ListRow(
                     Ico.TOOLS, t("الإعداد واستكشاف الأخطاء", "Setup & troubleshooting"),
-                    if (issues.isEmpty()) t("كل شيء سليم ✓", "All good ✓") else digits(t("${issues.size} يحتاج إصلاحًا", "${issues.size} need fixing"), ar),
+                    if (issues.isEmpty()) t("كل شيء سليم", "All good ✓") else digits(t("${issues.size} يحتاج إصلاحًا", "${issues.size} need fixing"), ar),
                     onClick = onSettings,
                 )
                 ListRow(Ico.ADHAN, t("إعدادات الصلاة والأذان", "Prayer & adhan settings"), if (ar) prefs.calc.madhab.ar else prefs.calc.madhab.en, onClick = onSettings)
