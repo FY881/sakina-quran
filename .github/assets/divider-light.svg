@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 40" width="1000" height="40" role="img" aria-label="divider">
+<style>
+.l{stroke-dasharray:420;animation:l 3.5s ease-out infinite alternate}
+@keyframes l{from{stroke-dashoffset:420}to{stroke-dashoffset:0}}
+.s{animation:s 14s linear infinite;transform-origin:500.0px 20px}
+@keyframes s{to{transform:rotate(360deg)}}
+.d{animation:d 2.4s ease-in-out infinite}
+@keyframes d{0%,100%{opacity:.25}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<linearGradient id="gl" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#8A6216"/><stop offset="1" stop-color="#8A6216" stop-opacity="0"/></linearGradient>
+<linearGradient id="gr" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8A6216"/><stop offset="1" stop-color="#8A6216" stop-opacity="0"/></linearGradient>
+</defs>
+<path class="l" d="M470.0,20 L50.0,20" stroke="url(#gl)" stroke-width="1.5" fill="none"/>
+<path class="l" d="M530.0,20 L950.0,20" stroke="url(#gr)" stroke-width="1.5" fill="none"/>
+<circle cx="440.0" cy="20" r="2.6" fill="#8A6216" class="d" style="animation-delay:0.00s"/><circle cx="414.0" cy="20" r="2.2" fill="#8A6216" class="d" style="animation-delay:0.25s"/><circle cx="388.0" cy="20" r="1.8" fill="#8A6216" class="d" style="animation-delay:0.50s"/><circle cx="362.0" cy="20" r="1.4" fill="#8A6216" class="d" style="animation-delay:0.75s"/><circle cx="336.0" cy="20" r="1.0" fill="#8A6216" class="d" style="animation-delay:1.00s"/><circle cx="560.0" cy="20" r="2.6" fill="#8A6216" class="d" style="animation-delay:0.00s"/><circle cx="586.0" cy="20" r="2.2" fill="#8A6216" class="d" style="animation-delay:0.25s"/><circle cx="612.0" cy="20" r="1.8" fill="#8A6216" class="d" style="animation-delay:0.50s"/><circle cx="638.0" cy="20" r="1.4" fill="#8A6216" class="d" style="animation-delay:0.75s"/><circle cx="664.0" cy="20" r="1.0" fill="#8A6216" class="d" style="animation-delay:1.00s"/>
+<g class="s"><polygon points="514.0,20.0 509.3,23.9 509.9,29.9 503.9,29.3 500.0,34.0 496.1,29.3 490.1,29.9 490.7,23.9 486.0,20.0 490.7,16.1 490.1,10.1 496.1,10.7 500.0,6.0 503.9,10.7 509.9,10.1 509.3,16.1" fill="none" stroke="#8A6216" stroke-width="1.6"/></g>
+<polygon points="506.5,22.7 503.6,23.6 502.7,26.5 500.0,25.0 497.3,26.5 496.4,23.6 493.5,22.7 495.0,20.0 493.5,17.3 496.4,16.4 497.3,13.5 500.0,15.0 502.7,13.5 503.6,16.4 506.5,17.3 505.0,20.0" fill="#8A6216"/>
+</svg>
