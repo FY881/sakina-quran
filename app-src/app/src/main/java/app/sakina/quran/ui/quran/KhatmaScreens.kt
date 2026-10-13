@@ -377,6 +377,7 @@ fun QuranStatsScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                         Text(t("إيقاف السلسلة اليوم بعذر", "Pause the streak today"), style = MaterialTheme.typography.bodyLarge)
                         Muted(t("سفر أو مرض أو عذر شرعي — لا تنقطع سلسلتك", "Travel, illness or a valid excuse — your streak is kept"))
                     }
+                    Spacer(Modifier.width(12.dp))
                     Switch(exc, { scope.launch { store.toggleExcused(today) } }, colors = app.sakina.quran.ui.azkar.switchColors())
                 }
             }
