@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
@@ -129,12 +130,15 @@ private fun KhatmaCard(k: Khatma, today: LocalDate, primary: Boolean, onOpen: (S
                 Muted(t("من ${fmtDate(k.startDate, true)} إلى ${fmtDate(k.endDate, true)}", "${fmtDate(k.startDate, false)} → ${fmtDate(k.endDate, false)}"))
             }
             val (lbl, col) = when (pace) {
-                Pace.DONE -> t("تمّت ✓", "Completed ✓") to look.cta
+                Pace.DONE -> t("تمّت", "Completed") to look.cta
                 Pace.AHEAD -> t("متقدّم", "Ahead") to look.cta
                 Pace.ON_TRACK -> t("في الموعد", "On track") to look.cta
                 Pace.BEHIND -> t("متأخر قليلًا", "Behind") to look.warn
             }
-            Text(lbl, style = MaterialTheme.typography.labelLarge, color = col, modifier = Modifier.clip(CircleShape).background(col.copy(alpha = .14f)).padding(horizontal = 10.dp, vertical = 4.dp))
+            // Badge colours are computed so text stays ≥ 4.5:1 (WCAG AA) in every theme and mode.
+            val surface = look.card.compositeOver(look.bgBottom)
+            val (bbg, bfg) = if (pace == Pace.BEHIND) app.sakina.quran.ui.theme.warnBadgeColors(look.warn) else app.sakina.quran.ui.theme.badgeColors(col, surface, look.dark)
+            Text(lbl, style = MaterialTheme.typography.labelLarge, color = bfg, maxLines = 1, modifier = Modifier.clip(CircleShape).background(bbg).padding(horizontal = 12.dp, vertical = 5.dp))
         }
         VSpace(10.dp)
         Bar(KhatmaPlan.done(k).toFloat() / KhatmaPlan.total(k))
@@ -173,7 +177,7 @@ private fun KhatmaCard(k: Khatma, today: LocalDate, primary: Boolean, onOpen: (S
                     CtaPill(if (left == 0) t("اقرأ المزيد", "Read more") else t("اقرأ الورد", "Read wird"), Modifier.weight(1f)) {
                         onOpen("mushaf/${(k.progress + 1).coerceIn(k.startPage, k.endPage)}?k=${k.id}")
                     }
-                    if (left > 0) GhostPill(t("تمّ الورد ✓", "Mark done ✓"), Modifier.weight(1f)) { scope.launch { store.saveKhatma(KhatmaPlan.completeToday(k, today)) } }
+                    if (left > 0) GhostPill(t("تمّ الورد", "Mark done"), Modifier.weight(1f)) { scope.launch { store.saveKhatma(KhatmaPlan.completeToday(k, today)) } }
                 }
                 if (pace == Pace.BEHIND) Muted(t("أُعيد توزيع ما تبقّى على الأيام المتبقية تلقائيًا.", "What's left was spread over the remaining days automatically."), Modifier.padding(top = 6.dp))
             }
@@ -188,7 +192,7 @@ private fun KhatmaCard(k: Khatma, today: LocalDate, primary: Boolean, onOpen: (S
     }
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false },
-        confirmButton = { TextButton(onClick = { confirmDelete = false; scope.launch { store.deleteKhatma(k.id) } }) { Text(t("حذف", "Delete"), color = look.warn) } },
+        confirmButton = { TextButton(onClick = { confirmDelete = false; scope.launch { store.deleteKhatma(k.id) } }) { Text(t("حذف", "Delete"), color = MaterialTheme.colorScheme.error) } },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(t("إلغاء", "Cancel")) } },
         title = { Text(t("حذف «${k.name}»؟", "Delete \"${k.name}\"?")) },
         text = { Text(t("سيُحذف تقدّمك في هذه الختمة.", "Your progress in this khatma will be removed.")) },
