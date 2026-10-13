@@ -1,0 +1,6 @@
+quran-uthmani.txt     Tanzil Quran Text (Uthmani 1.1), verbatim, md5 f5af117f2eef3d4258f98b9bea753611 — CC BY 3.0, changing not allowed, https://tanzil.net
+quran-simple.txt.gz   Tanzil Quran Text (Simple 1.1, with pause marks/sajdah/tatweel), verbatim, gzip; md5 of text 721dfdd25357d209012fea09bfc74768 — same licence
+quran-data.xml        Tanzil Quran metadata 1.0 (suras, juz, hizb quarters, 604 Madinah pages, sajdas) — https://tanzil.net/docs/quran_metadata
+reciters.json         mp3quran.net API v3 reciters snapshot (2026-10-12) — "we allow any visitor or developer to copy any material or use any link" (https://www.mp3quran.net/privacy-en.html). Audio is streamed from cdn.mp3quran.net, never bundled.
+topics.json           Sakina's own topic index (S-ORIG); every reference keyword-checked against the Tanzil text.
+Tajweed colouring is computed on-device by Sakina's own rule engine over the unaltered Tanzil text (no third-party tajweed data).
