@@ -79,7 +79,7 @@ fun TafsirScreen(sura: Int, startAyah: Int, onBack: () -> Unit, onOpen: (String)
                 val g = quran.global(s, a)
                 SCard(padding = PaddingValues(14.dp), onClick = { onOpen("reader/$s/$a") }) {
                     RtlBox {
-                        Text("${quran.displayAyah(s, a)} ${ayahMark(a)}", fontFamily = QuranFont, fontSize = 22.sp, lineHeight = 42.sp, color = look.onCard, modifier = Modifier.fillMaxWidth())
+                        Text(glueWaqf("${quran.displayAyah(s, a)} ${ayahMark(a)}"), fontFamily = QuranFont, fontSize = 22.sp, lineHeight = 42.sp, color = look.onCard, modifier = Modifier.fillMaxWidth())
                     }
                     VSpace(6.dp)
                     Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(look.cta.copy(alpha = .08f)).padding(10.dp)) {
