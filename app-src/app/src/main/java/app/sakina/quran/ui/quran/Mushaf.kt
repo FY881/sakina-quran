@@ -209,7 +209,10 @@ fun MushafScreen(startPage: Int, khatmaId: String?, onBack: () -> Unit, onOpen: 
                     else t("ورد اليوم: ص ${num(r.first, true)}–${num(r.last, true)} • بقي ${num(left, true)}", "Wird: p. ${r.first}–${r.last} • $left left"),
                     style = MaterialTheme.typography.labelLarge, color = paper.accent, modifier = Modifier.weight(1f), maxLines = 1,
                 )
-            } else Muted(t("اضغط على آية لخياراتها، وعلى الهامش لإخفاء الأدوات", "Tap an ayah for options, the margin to hide controls"), Modifier.weight(1f))
+            } else Text(
+                t("اضغط على آية لخياراتها، وعلى الهامش لإخفاء الأدوات", "Tap an ayah for options, the margin to hide controls"),
+                style = MaterialTheme.typography.bodySmall, color = app.sakina.quran.ui.theme.readableOn(paper.muted, paper.bg), modifier = Modifier.weight(1f),
+            )
         }
     }
     sheetAyah?.let { g -> quran?.let { q -> val (s, a) = q.fromGlobal(g); AyahSheet(q, s, a, onDismiss = { sheetAyah = null }, onOpen = { sheetAyah = null; onOpen(it) }) } }
