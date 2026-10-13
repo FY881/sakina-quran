@@ -84,7 +84,9 @@ fun AyahSheet(q: Quran, s: Int, a: Int, onDismiss: () -> Unit, onOpen: (String) 
     val prefs = qu.prefs
     val ref = "$s:$a"
     val g = q.global(s, a)
-    val tafsir = rememberEdition(prefs.tafsir)
+    var tafRetry by remember { mutableIntStateOf(0) }
+    val tafState = rememberEditionState(prefs.tafsir, tafRetry)
+    val tafsir = (tafState as? EdState.Ready)?.data
     val trIds = prefs.activeTranslations(ar).filter { Editions.available(ctx, it) }
     var playing by remember { mutableStateOf(DhikrAudio.playingUrl == Reciters.ayahUrl(prefs.ayahVoice, g)) }
     var editNote by remember { mutableStateOf(false) }
@@ -155,7 +157,8 @@ fun AyahSheet(q: Quran, s: Int, a: Int, onDismiss: () -> Unit, onOpen: (String) 
             Text(t("التفسير — ", "Tafsir — ") + (ted?.let { if (ar) it.nameAr else it.nameEn } ?: ""), style = MaterialTheme.typography.titleSmall, color = look.cta)
             VSpace(4.dp)
             val tx = tafsir?.getOrNull(g).orEmpty()
-            if (tafsir == null) Muted(t("جارٍ التحميل…", "Loading…"))
+            if (tafState is EdState.Error) EditionError { Editions.failed -= prefs.tafsir; tafRetry++ }
+            else if (tafsir == null) Muted(t("جارٍ التحميل…", "Loading…"))
             else Text(
                 if (tx.length > 700) tx.take(700) + "…" else tx, style = MaterialTheme.typography.bodyMedium.copy(textDirection = if (ted?.rtl != false) TextDirection.Rtl else TextDirection.Ltr),
                 color = look.onCard, modifier = Modifier.fillMaxWidth(),
