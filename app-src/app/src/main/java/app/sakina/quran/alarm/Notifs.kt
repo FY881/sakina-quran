@@ -21,6 +21,8 @@ object Notifs {
     const val CH_FALLBACK = "adhan_fallback" // takbeer sound when the player service may not start
     const val CH_AZKAR = "azkar_remind"
     const val ID_AZKAR = 4400
+    const val CH_QURAN = "quran_wird"
+    const val ID_WIRD = 4500
     const val ID_ADHAN = 4100
     const val ID_PRAYER = 4200
     const val ID_REMIND = 4300
@@ -43,6 +45,9 @@ object Notifs {
             NotificationChannel(CH_REMIND, t("تذكير قبل الصلاة", "Reminder before prayer"), NotificationManager.IMPORTANCE_DEFAULT),
             NotificationChannel(CH_AZKAR, t("تذكير الأذكار", "Azkar reminders"), NotificationManager.IMPORTANCE_DEFAULT).apply {
                 description = t("أذكار الصباح والمساء والنوم في وقتها", "Morning, evening and sleep azkar on time")
+            },
+            NotificationChannel(CH_QURAN, t("الورد اليومي", "Daily Quran wird"), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = t("تذكير بورد الختمة اليومي", "Reminder for your khatma's daily portion")
             },
             NotificationChannel(CH_FALLBACK, t("تكبير احتياطي", "Takbeer fallback"), NotificationManager.IMPORTANCE_HIGH).apply {
                 setSound(Uri.parse("android.resource://${c.packageName}/${R.raw.takbeer}"), attrs)
