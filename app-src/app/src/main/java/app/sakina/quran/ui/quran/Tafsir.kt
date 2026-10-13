@@ -51,7 +51,9 @@ fun TafsirScreen(sura: Int, startAyah: Int, onBack: () -> Unit, onOpen: (String)
     val scope = rememberCoroutineScope()
     val tafsirs = Editions.ALL.filter { it.kind == EdKind.TAFSIR && Editions.available(ctx, it.id) }
     var ed by remember(qu.prefs.tafsir) { mutableStateOf(qu.prefs.tafsir.takeIf { id -> tafsirs.any { it.id == id } } ?: "ar.muyassar") }
-    val data = rememberEdition(ed)
+    var retry by remember { mutableIntStateOf(0) }
+    val state = rememberEditionState(ed, retry)
+    val data = (state as? EdState.Ready)?.data
     val list = rememberLazyListState()
     var s by remember { mutableIntStateOf(sura.coerceIn(1, 114)) }
     Column(Modifier.fillMaxSize()) {
@@ -67,6 +69,7 @@ fun TafsirScreen(sura: Int, startAyah: Int, onBack: () -> Unit, onOpen: (String)
             item { Chip(t("+ تفاسير أخرى", "+ More tafsir"), onClick = { onOpen("quran_library") }) }
         }
         VSpace(8.dp)
+        if (state is EdState.Error) { Box(Modifier.fillMaxWidth().padding(24.dp)) { EditionError { Editions.failed -= ed; retry++ } }; return@Column }
         if (quran == null || data == null) { Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = look.cta) }; return@Column }
         val sur = quran.suras[s - 1]
         LaunchedEffect(s) { if (s == sura && startAyah > 1) list.scrollToItem(startAyah - 1) }
@@ -172,7 +175,7 @@ private fun EditionRow(e: Edition, progress: MutableMap<String, Float>, errors: 
                         have -> t("محمَّل على جهازك", "Downloaded on your device")
                         else -> t("نحو ${num(e.approxMb, true)} م.ب — تنزيل مرة واحدة", "About ${e.approxMb} MB — one-time download")
                     })
-                    if (errors[e.id] == true) Text(t("تعذّر التنزيل، تحقّق من الاتصال ثم أعد المحاولة.", "Download failed — check your connection and try again."), color = look.warn, style = MaterialTheme.typography.bodySmall)
+                    if (errors[e.id] == true) Text(t("تعذّر التنزيل، تحقّق من الاتصال ثم أعد المحاولة.", "Download failed — check your connection and try again."), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     if (p != null && p < 1f) { VSpace(6.dp); Bar(p) }
                 }
                 Spacer(Modifier.width(8.dp))
