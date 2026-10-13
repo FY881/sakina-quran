@@ -26,6 +26,10 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(c: Context, intent: Intent) = async {
         val repo = SettingsRepo(c)
         val prefs = repo.now()
+        if (intent.action == WirdAlarm.ACTION) {
+            WirdAlarm.fire(c, intent)
+            return@async
+        }
         if (intent.action == Scheduler.ACTION_AZKAR) {
             val kind = intent.getStringExtra("azkar")
             val fire = intent.getLongExtra("fire", 0L)
@@ -76,5 +80,6 @@ class RescheduleReceiver : BroadcastReceiver() {
     override fun onReceive(c: Context, intent: Intent) = async {
         Notifs.ensure(c)
         Scheduler.reschedule(c, SettingsRepo(c).now())
+        runCatching { WirdAlarm.reschedule(c) }
     }
 }
