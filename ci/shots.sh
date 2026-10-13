@@ -52,6 +52,9 @@ adb shell input tap 540 1150; sleep 3;         shot "${lang}_${m}_q04_ayah_sheet
 adb shell input swipe 540 1900 540 500 500; sleep 1; waitloaded 15; shot "${lang}_${m}_q04b_ayah_sheet_tafsir"
 launch $lang "mushaf/582" $M "tajweed=0,paper=1"; shot "${lang}_${m}_q05_mushaf_sepia"
 launch $lang "reader/2/255" $M "translit=1,tafsir=1,tr=en.sahih"; waitloaded 10; shot "${lang}_${m}_q06_reader_tr"
+# Auto-scroll (QR17): start it from the top-bar button; the pill must appear only now and not cover the text.
+if [ $lang = ar ]; then ax=330; else ax=750; fi
+adb shell input tap $ax 205; sleep 3; snap "${lang}_${m}_q06c_reader_autoscroll"
 launch $lang "tafsir/2/255" $M;                waitloaded 15; shot "${lang}_${m}_q07_tafsir"
 launch $lang quran_library $M;                 shot "${lang}_${m}_q08_library"
 launch $lang khatma $M;                        shot "${lang}_${m}_q09_khatma"
