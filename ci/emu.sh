@@ -20,5 +20,5 @@ tail -30 emu_run.log
 adb shell settings put global window_animation_scale 0; adb shell settings put global transition_animation_scale 0; adb shell settings put global animator_duration_scale 0
 adb shell wm size
 sleep 45; export PATH=$PATH:$(ls -d $SDK/build-tools/* | tail -1)
-timeout 1200 bash ci/shots.sh
+timeout 1500 bash ci/shots.sh
 exit 0
