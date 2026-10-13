@@ -239,4 +239,15 @@ class QuranQ2Test {
     @Test fun arabicDigitsInReferences() {
         assertEquals("البخاري مع الفتح ١١/ ١١٣", arabicIndic("البخاري مع الفتح 11/ 113"))
     }
+
+    @Test fun waqfMarksStayWithTheirWord() {
+        val txt = q.ayah(2, 255)
+        val g = Tajweed.glueWaqf(txt)
+        assertEquals(txt.length, g.length)
+        assertFalse(Regex(" [\u06D6-\u06DC]").containsMatchIn(g))
+        assertTrue(g.contains("\u00A0\u06DA"))
+        // Only the space before a mark changes; the stored text is untouched.
+        assertEquals(txt, g.replace('\u00A0', ' '))
+        assertEquals(Quran.UTHMANI_MD5, Quran.md5(asset("quran/quran-uthmani.txt").readBytes()))
+    }
 }
