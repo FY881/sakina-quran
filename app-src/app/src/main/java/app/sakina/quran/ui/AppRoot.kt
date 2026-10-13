@@ -88,6 +88,7 @@ import androidx.compose.runtime.remember
 import app.sakina.quran.ui.theme.LocalSakina
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 enum class Tab(val route: String, val ar: String, val en: String, val icon: ImageVector) {
     HOME("home", "الرئيسية", "Home", Icons.Outlined.Home),
@@ -99,10 +100,15 @@ enum class Tab(val route: String, val ar: String, val en: String, val icon: Imag
 
 private val KNOWN_ROUTES = Tab.entries.map { it.route }.toSet() +
     setOf("settings", "city", "qibla", "more", "profile", "themes", "iconpacks", "tasbih", "names", "quran_search", "onboarding",
-        "azkar", "hisn", "duas", "ruqyah", "istikhara", "names_quiz", "azkar_search", "azkar_mine")
+        "azkar", "hisn", "duas", "ruqyah", "istikhara", "names_quiz", "azkar_search", "azkar_mine",
+        "mushaf", "tafsir", "quran_library", "reciters", "khatma", "khatma_new", "tajweed", "topics", "quran_marks", "quran_stats", "share_ayah")
+
+/** Route prefixes with path arguments that are navigated as-is. */
+private val PATH_ROUTES = listOf("reader/", "mushaf/", "tafsir/", "topic/", "surah_info/", "share/")
 
 /** Routes that hide the bottom bar (immersive / first-run). */
-private fun hidesBar(route: String?) = route == "onboarding" || route?.startsWith("reader/") == true || route?.startsWith("azkar/") == true
+private fun hidesBar(route: String?) = route == "onboarding" || route?.startsWith("reader/") == true || route?.startsWith("azkar/") == true ||
+    route == "mushaf" || route?.startsWith("mushaf/") == true
 
 @Composable
 fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String? = null, openRoute: String? = null, onOpened: () -> Unit = {}) {
@@ -110,6 +116,8 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
     val entry by nav.currentBackStackEntryAsState()
     val current = entry?.destination?.route
     val userData by user.data.collectAsStateWithLifecycle(initialValue = UserData())
+    val appCtx = LocalContext.current.applicationContext
+    val qstore = remember { app.sakina.quran.data.QuranStore(appCtx) }
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
     val st = LocalSakina.current
@@ -130,7 +138,7 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
             val sid = route.removePrefix("azkar/").substringBefore('@'); val i = route.substringAfter('@', "0").toIntOrNull() ?: 0
             nav.navigate("azkar/$sid/$i") { launchSingleTop = true }
         } else if (route.substringBefore('?') in KNOWN_ROUTES) nav.navigate(route) { launchSingleTop = true }
-        else if (route.startsWith("reader/")) nav.navigate(route) { launchSingleTop = true }
+        else if (PATH_ROUTES.any { route.startsWith(it) }) nav.navigate(route) { launchSingleTop = true }
     }
     LaunchedEffect(openRoute) { if (openRoute != null) { go(openRoute); onOpened() } }
     val snack = remember { SnackbarHostState() }
@@ -174,7 +182,7 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
                 }
             },
         ) { pad ->
-            CompositionLocalProvider(LocalSoon provides soon) {
+            CompositionLocalProvider(LocalSoon provides soon, app.sakina.quran.ui.quran.LocalQStore provides qstore) {
             NavHost(nav, startDestination = startDest, modifier = Modifier.padding(bottom = pad.calculateBottomPadding())) {
                 composable(Tab.HOME.route) {
                     HomeScreen(
@@ -268,7 +276,61 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
                         onSaveLast = { ss, aa -> scope.launch { user.setQuranLast(ss, aa) } },
                         onBookmark = { ss, aa -> scope.launch { user.toggleBookmark(ss, aa) } },
                         onOpenSura = { n -> nav.navigate("reader/$n/1") { popUpTo("reader/{sura}/{ayah}") { inclusive = true } } },
+                        onOpen = ::go,
                     )
+                }
+                // ── Q2: mushaf, tafsir, translations, khatma, share studio, topics, marks, reciters, tajweed
+                val saveLast: (Int, Int) -> Unit = { ss, aa -> scope.launch { user.setQuranLast(ss, aa) } }
+                composable("mushaf") {
+                    val lp by androidx.compose.runtime.produceState<Int?>(null) { value = runCatching { qstore.now().prefs.lastPage }.getOrDefault(1) }
+                    lp?.let { p -> app.sakina.quran.ui.quran.MushafScreen(p, null, onBack = { nav.popBackStack() }, onOpen = ::go, onSaveLast = saveLast) }
+                }
+                composable(
+                    "mushaf/{page}?k={k}",
+                    arguments = listOf(
+                        androidx.navigation.navArgument("page") { type = androidx.navigation.NavType.StringType },
+                        androidx.navigation.navArgument("k") { type = androidx.navigation.NavType.StringType; nullable = true; defaultValue = null },
+                    ),
+                ) { e ->
+                    val p = e.arguments?.getString("page")?.toIntOrNull()?.coerceIn(1, 604) ?: 1
+                    app.sakina.quran.ui.quran.MushafScreen(p, e.arguments?.getString("k"), onBack = { nav.popBackStack() }, onOpen = ::go, onSaveLast = saveLast)
+                }
+                composable("tafsir") {
+                    val last by androidx.compose.runtime.produceState<Pair<Int, Int>?>(null) {
+                        val u = runCatching { user.data.first() }.getOrNull()
+                        value = if (u != null && u.lastSura in 1..114) u.lastSura to u.lastAyah else 1 to 1
+                    }
+                    last?.let { (ss, aa) -> app.sakina.quran.ui.quran.TafsirScreen(ss, aa, onBack = { nav.popBackStack() }, onOpen = ::go) }
+                }
+                composable("tafsir/{sura}/{ayah}") { e ->
+                    val ss = e.arguments?.getString("sura")?.toIntOrNull()?.coerceIn(1, 114) ?: 1
+                    val aa = e.arguments?.getString("ayah")?.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                    app.sakina.quran.ui.quran.TafsirScreen(ss, aa, onBack = { nav.popBackStack() }, onOpen = ::go)
+                }
+                composable("quran_library") { app.sakina.quran.ui.quran.QuranLibraryScreen(onBack = { nav.popBackStack() }) }
+                composable("reciters") { app.sakina.quran.ui.quran.RecitersScreen(onBack = { nav.popBackStack() }) }
+                composable("khatma") { app.sakina.quran.ui.quran.KhatmaScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
+                composable("khatma_new") { app.sakina.quran.ui.quran.KhatmaNewScreen(onBack = { nav.popBackStack() }, onDone = { nav.popBackStack() }) }
+                composable("quran_stats") { app.sakina.quran.ui.quran.QuranStatsScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
+                composable("tajweed") { app.sakina.quran.ui.quran.TajweedGuideScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
+                composable("topics") { app.sakina.quran.ui.quran.TopicsScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
+                composable("topic/{id}") { e -> app.sakina.quran.ui.quran.TopicScreen(e.arguments?.getString("id") ?: "", onBack = { nav.popBackStack() }, onOpen = ::go) }
+                composable("surah_info/{sura}") { e ->
+                    app.sakina.quran.ui.quran.SurahInfoScreen(e.arguments?.getString("sura")?.toIntOrNull()?.coerceIn(1, 114) ?: 1, onBack = { nav.popBackStack() }, onOpen = ::go)
+                }
+                composable("quran_marks") { app.sakina.quran.ui.quran.QuranMarksScreen(startArgs["tab"]?.toIntOrNull() ?: 0, onBack = { nav.popBackStack() }, onOpen = ::go) }
+                composable("share/{s}/{a}/{b}") { e ->
+                    val ss = e.arguments?.getString("s")?.toIntOrNull()?.coerceIn(1, 114) ?: 1
+                    val aa = e.arguments?.getString("a")?.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                    val bb = e.arguments?.getString("b")?.toIntOrNull()?.coerceAtLeast(aa) ?: aa
+                    app.sakina.quran.ui.quran.ShareStudioScreen(ss, aa, bb, onBack = { nav.popBackStack() })
+                }
+                composable("share_ayah") {
+                    val last by androidx.compose.runtime.produceState<Pair<Int, Int>?>(null) {
+                        val u = runCatching { user.data.first() }.getOrNull()
+                        value = if (u != null && u.lastSura in 1..114) u.lastSura to u.lastAyah else 2 to 255
+                    }
+                    last?.let { (ss, aa) -> app.sakina.quran.ui.quran.ShareStudioScreen(ss, aa, aa, onBack = { nav.popBackStack() }) }
                 }
             }
             ComingSoonSheet(soon, onOpen = ::go)
