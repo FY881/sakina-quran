@@ -383,10 +383,10 @@ fun AzkarSessionScreen(
                     IconButton(onClick = { onFav(d.id) }) {
                         Icon(if (fav) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder, t("مفضلة", "Favourite"), tint = if (fav) androidx.compose.ui.graphics.Color(0xFFEF4444) else look.onCardMuted)
                     }
-                    IconButton(onClick = { ShareImage.share(ctx, if (ar) session.ar else session.en, d.text, d.ref.ifBlank { session.ar }, palette(look)) }) {
+                    IconButton(onClick = { ShareImage.share(ctx, if (ar) session.ar else session.en, d.text, d.refAr.ifBlank { session.ar }, palette(look)) }) {
                         Icon(Icons.Outlined.Share, t("مشاركة كصورة", "Share as image"), tint = look.onCardMuted)
                     }
-                    IconButton(onClick = { copyText(ctx, d.text + if (d.ref.isNotBlank()) "\n— ${d.ref}" else "", ar) }) {
+                    IconButton(onClick = { copyText(ctx, d.text + if (d.ref.isNotBlank()) "\n— ${d.refAr}" else "", ar) }) {
                         Icon(Icons.Outlined.ContentCopy, t("نسخ", "Copy"), tint = look.onCardMuted)
                     }
                 }
@@ -404,13 +404,13 @@ fun AzkarSessionScreen(
                         VSpace(10.dp)
                         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(look.cta.copy(alpha = .12f)).padding(12.dp)) {
                             Text(t("الفضل", "Virtue"), style = MaterialTheme.typography.labelLarge, color = look.cta)
-                            ArabicText(d.virtue, style = MaterialTheme.typography.bodyMedium, color = look.onCard)
+                            ArabicText(d.virtueAr, style = MaterialTheme.typography.bodyMedium, color = look.onCard)
                         }
                     }
                     if (d.ref.isNotBlank()) {
                         VSpace(8.dp)
                         Text(t("المصدر", "Source"), style = MaterialTheme.typography.labelMedium, color = look.cta)
-                        ArabicText(d.ref)
+                        ArabicText(d.refAr)
                     }
                     if (d.sura > 0) {
                         VSpace(6.dp)
@@ -602,7 +602,7 @@ fun AzkarMineScreen(user: UserData, onBack: () -> Unit, onOpen: (String) -> Unit
                     Row(verticalAlignment = Alignment.Top) {
                         Column(Modifier.weight(1f)) {
                             Text(d.text, fontFamily = QuranFont, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), fontSize = 18.sp, lineHeight = 34.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                            if (d.ref.isNotBlank()) Muted(d.ref, Modifier.padding(top = 2.dp))
+                            if (d.ref.isNotBlank()) Muted(d.refAr, Modifier.padding(top = 2.dp))
                         }
                         IconButton(onClick = { onFav(d.id) }) { Icon(Icons.Outlined.Favorite, t("إزالة", "Remove"), tint = androidx.compose.ui.graphics.Color(0xFFEF4444)) }
                     }
