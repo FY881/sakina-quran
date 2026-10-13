@@ -92,12 +92,12 @@ fun DuasScreen(user: UserData, initialTab: Int, onBack: () -> Unit, onOpen: (Str
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(if (ar) meta.topicAr else meta.topicEn, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = look.cta)
-                            Muted(if (ar) d.ref else quran?.let { enRef(it, meta.sura, meta.from, meta.to) } ?: d.ref)
+                            Muted(if (ar) d.refAr else quran?.let { enRef(it, meta.sura, meta.from, meta.to) } ?: d.refAr)
                         }
                         IconButton(onClick = { onFav(d.id) }) {
                             Icon(if (fav) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder, t("مفضلة", "Favourite"), tint = if (fav) Color(0xFFEF4444) else look.onCardMuted)
                         }
-                        IconButton(onClick = { ShareImage.share(ctx, if (ar) meta.topicAr else meta.topicEn, d.text, d.ref, palette(look)) }) {
+                        IconButton(onClick = { ShareImage.share(ctx, if (ar) meta.topicAr else meta.topicEn, d.text, d.refAr, palette(look)) }) {
                             Icon(Icons.Outlined.Share, t("مشاركة كصورة", "Share as image"), tint = look.onCardMuted)
                         }
                     }
@@ -116,7 +116,7 @@ fun DuasScreen(user: UserData, initialTab: Int, onBack: () -> Unit, onOpen: (Str
                     }
                     VSpace(4.dp)
                     Text(c.items.first().text, fontFamily = QuranFont, fontSize = 18.sp, lineHeight = 34.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), modifier = Modifier.fillMaxWidth())
-                    ArabicText(c.items.first().ref, maxLines = 2)
+                    ArabicText(c.items.first().refAr, maxLines = 2)
                 }
             }
         }
@@ -161,7 +161,7 @@ fun RuqyahScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     PackIcon(Ico.QURAN, 26.dp); Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(if (ar) d.ref else enRef(q, r[0], r[1], r[2]), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                        Text(if (ar) d.refAr else enRef(q, r[0], r[1], r[2]), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                         Muted(if (r[3] > 1) countLabel(r[3], ar) else t("اضغط لعرض النص", "Tap to show the text"))
                     }
                 }
@@ -180,7 +180,7 @@ fun RuqyahScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                 Text(c.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = look.cta)
                 VSpace(4.dp)
                 Text(c.items.first().text, fontFamily = QuranFont, fontSize = 18.sp, lineHeight = 34.sp, maxLines = 4, overflow = TextOverflow.Ellipsis, style = LocalTextStyle.current.copy(textDirection = TextDirection.Rtl), modifier = Modifier.fillMaxWidth())
-                ArabicText(c.items.first().ref, maxLines = 2)
+                ArabicText(c.items.first().refAr, maxLines = 2)
             }
         }
         item { Muted(t("التلاوة الصوتية للرقية ستُضاف من مصدر مرخّص في تحديث قادم.", "Recited audio for the ruqyah will be added from a licensed source in a later update."), Modifier.fillMaxWidth().padding(8.dp)) }
@@ -218,7 +218,7 @@ fun IstikharaScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
             if (d == null) Loading() else SCard(strong = true) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(t("دعاء الاستخارة", "The Istikhara dua"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { ShareImage.share(ctx, if (ar) "دعاء الاستخارة" else "Istikhara dua", d.text, d.ref, palette(look)) }) {
+                    IconButton(onClick = { ShareImage.share(ctx, if (ar) "دعاء الاستخارة" else "Istikhara dua", d.text, d.refAr, palette(look)) }) {
                         Icon(Icons.Outlined.Share, t("مشاركة كصورة", "Share as image"), tint = look.onCardMuted)
                     }
                 }
@@ -227,7 +227,7 @@ fun IstikharaScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                 }
                 VSpace(6.dp)
                 Text(t("المصدر", "Source"), style = MaterialTheme.typography.labelMedium, color = look.cta)
-                ArabicText(d.ref)
+                ArabicText(d.refAr)
                 VSpace(10.dp)
                 CtaPill(t("افتح الدعاء بالعدّاد", "Open the dua with the counter"), Modifier.fillMaxWidth()) { onOpen("azkar/h$ISTIKHARA_CHAPTER") }
             }
