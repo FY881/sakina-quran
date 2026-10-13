@@ -27,7 +27,14 @@ data class Dhikr(
     val sura: Int = 0,
     val ayah: Int = 0,
     val chapter: Int = -1,
-)
+) {
+    /** Source reference for display: Arabic text, so its numbers use Arabic-Indic digits (data stays byte-identical). */
+    val refAr: String get() = arabicIndic(ref)
+    val virtueAr: String get() = arabicIndic(virtue)
+}
+
+/** Western → Arabic-Indic digits for Arabic-script references ("مسلم 4/ 2083" → "مسلم ٤/ ٢٠٨٣"). */
+fun arabicIndic(s: String): String = buildString(s.length) { s.forEach { c -> append(if (c in '0'..'9') '\u0660' + (c - '0') else c) } }
 
 data class Chapter(val index: Int, val title: String, val items: List<Dhikr>)
 
