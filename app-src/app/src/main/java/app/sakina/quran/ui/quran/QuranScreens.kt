@@ -90,6 +90,15 @@ import app.sakina.quran.ui.theme.QuranFont
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 
 @Composable
 fun rememberQuran(): Quran? {
@@ -119,6 +128,7 @@ private fun SuraBadge(n: Int) {
 @Composable
 fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
     val quran = rememberQuran()
+    val qu = rememberQUser()
     val ar = isArabic()
     val look = LocalSakina.current.look
     val open = rememberFeatureOpener(onOpen)
@@ -154,10 +164,33 @@ fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
                 }
             }
         }
+        // Mushaf + today's wird (QR02 / QR29)
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SCard(Modifier.weight(1f), onClick = { onOpen("mushaf/${qu.prefs.lastPage}") }, padding = PaddingValues(14.dp)) {
+                    PackIcon(Ico.BOOKMARK, 34.dp); VSpace(6.dp)
+                    Text(t("المصحف", "Mushaf"), style = MaterialTheme.typography.titleMedium)
+                    Muted(t("صفحة ${num(qu.prefs.lastPage, true)} من ٦٠٤", "Page ${qu.prefs.lastPage} of 604"))
+                }
+                val k = qu.active
+                SCard(Modifier.weight(1f), onClick = { onOpen("khatma") }, padding = PaddingValues(14.dp)) {
+                    PackIcon(Ico.KHATMA, 34.dp); VSpace(6.dp)
+                    Text(t("الورد اليومي", "Daily wird"), style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                    if (k == null) Muted(t("ابدأ خطة ختمة", "Start a khatma plan"))
+                    else {
+                        val today = java.time.LocalDate.now()
+                        val left = app.sakina.quran.quran.KhatmaPlan.todayLeft(k, today)
+                        Muted(if (app.sakina.quran.quran.KhatmaPlan.isDone(k)) t("أتممت الختمة ✓", "Khatma complete ✓") else if (left == 0) t("أتممت ورد اليوم ✓", "Today's wird done ✓") else t("بقي ${num(left, true)} صفحة اليوم", "$left pages left today"))
+                        VSpace(6.dp)
+                        Bar(app.sakina.quran.quran.KhatmaPlan.done(k).toFloat() / app.sakina.quran.quran.KhatmaPlan.total(k))
+                    }
+                }
+            }
+        }
         // Quick tools
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val tools = listOf("quran_search", "khatma", "reciters", "tafsir", "mushaf", "hifz", "tajweed", "translations")
+                val tools = listOf("quran_search", "tafsir", "translations", "tajweed", "quran_topics", "quran_marks", "share_ayah", "quran_stats", "reciters", "hifz")
                 items(tools.mapNotNull { feature(it) }) { f -> Chip(t(f.ar, f.en), leading = { PackIcon(f.ico, 18.dp) }, onClick = { open(f) }) }
             }
         }
@@ -201,7 +234,13 @@ fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
                 }
             }
         }
-        item { Muted(t("نص المصحف: مشروع تنزيل (tanzil.net) دون أي تعديل", "Quran text: Tanzil Project (tanzil.net), unaltered"), Modifier.fillMaxWidth().padding(8.dp)) }
+        item {
+            Muted(
+                t("نص المصحف: مشروع تنزيل (tanzil.net) دون أي تعديل", "Quran text: Tanzil Project (tanzil.net), unaltered") +
+                    if (quran.verified) t(" • ✓ تم التحقق من سلامة النص (MD5)", " • ✓ text integrity verified (MD5)") else t(" • ⚠ تعذّر التحقق من سلامة النص", " • ⚠ text integrity check failed"),
+                Modifier.fillMaxWidth().padding(8.dp),
+            )
+        }
     }
 }
 
@@ -228,15 +267,37 @@ private fun copyText(ctx: Context, text: String) {
 
 @OptIn(FlowPreview::class)
 @Composable
-fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, onSaveLast: (Int, Int) -> Unit, onBookmark: (Int, Int) -> Unit, onOpenSura: (Int) -> Unit) {
+fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, onSaveLast: (Int, Int) -> Unit, onBookmark: (Int, Int) -> Unit, onOpenSura: (Int) -> Unit, onOpen: (String) -> Unit = {}) {
     val quran = rememberQuran()
     val ar = isArabic()
     val look = LocalSakina.current.look
     val ctx = LocalContext.current
-    var size by rememberSaveable { mutableIntStateOf(26) }
+    val qu = rememberQUser()
+    val store = LocalQStore.current
+    val prefs = qu.prefs
+    val scope = rememberCoroutineScope()
     val list = rememberLazyListState()
+    val simple = rememberSimple(prefs.script == 1)
+    val trIds = prefs.activeTranslations(ar).filter { app.sakina.quran.quran.Editions.available(ctx, it) }
+    val tr = trIds.map { id -> id to rememberEdition(id) }
+    val translit = rememberEdition(if (prefs.translit) "en.transliteration" else null)
+    val tafsir = rememberEdition(if (prefs.inlineTafsir) prefs.tafsir else null)
+    var sheet by remember { mutableStateOf<Int?>(null) }
+    var showSettings by remember { mutableStateOf(false) }
+    var scrolling by remember { mutableStateOf(false) }
+    KeepScreenOn(prefs.keepOn)
+    ReadingTimer()
+    // QR17: hands-free auto-scroll.
+    LaunchedEffect(scrolling, prefs.autoScroll) {
+        if (!scrolling) return@LaunchedEffect
+        while (true) {
+            androidx.compose.runtime.withFrameNanos { }
+            val moved = list.scrollBy(prefs.autoScroll * 0.35f)
+            if (moved == 0f && !list.canScrollForward) { scrolling = false; break }
+        }
+    }
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
-        // Top bar
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 6.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("رجوع", "Back"), tint = MaterialTheme.colorScheme.onBackground) }
             Column(Modifier.weight(1f)) {
@@ -247,52 +308,85 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
                     Muted(t("الصفحة ${num(quran.page(sura, first), true)} • الجزء ${num(quran.juz(sura, first), true)}", "Page ${quran.page(sura, first)} • Juz ${quran.juz(sura, first)}"))
                 }
             }
-            IconButton(onClick = { size = (size - 2).coerceAtLeast(18) }) { Icon(Icons.Outlined.TextDecrease, t("تصغير الخط", "Smaller text"), tint = MaterialTheme.colorScheme.onBackground) }
-            IconButton(onClick = { size = (size + 2).coerceAtMost(40) }) { Icon(Icons.Outlined.TextIncrease, t("تكبير الخط", "Larger text"), tint = MaterialTheme.colorScheme.onBackground) }
+            IconButton(onClick = { scope.launch { store.updatePrefs { it.copy(tajweed = !it.tajweed) } } }) {
+                Icon(androidx.compose.material.icons.Icons.Outlined.Palette, t("ألوان التجويد", "Tajweed colours"), tint = if (prefs.tajweed) look.cta else MaterialTheme.colorScheme.onBackground)
+            }
+            IconButton(onClick = { showSettings = true }) { Icon(androidx.compose.material.icons.Icons.Outlined.Tune, t("إعدادات القراءة", "Reading settings"), tint = MaterialTheme.colorScheme.onBackground) }
+            IconButton(onClick = {
+                quran?.let { q -> val first = list.firstVisibleItemIndex.coerceIn(1, q.suras[sura - 1].ayas); onOpen("mushaf/${q.page(sura, first)}") }
+            }) { Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.MenuBook, t("المصحف", "Mushaf"), tint = MaterialTheme.colorScheme.onBackground) }
         }
         if (quran == null) { Loading(); return@Column }
         val s = quran.suras[sura - 1]
         LaunchedEffect(sura) { if (startAyah > 1) list.scrollToItem(startAyah.coerceIn(1, s.ayas)) }
         LaunchedEffect(sura) {
-            snapshotFlow { list.firstVisibleItemIndex }.distinctUntilChanged().debounce(800).collect { i -> onSaveLast(sura, i.coerceIn(1, s.ayas)) }
+            snapshotFlow { list.firstVisibleItemIndex }.distinctUntilChanged().debounce(800).collect { i ->
+                val a = i.coerceIn(1, s.ayas); onSaveLast(sura, a); runCatching { store.logPage(quran.page(sura, a)) }
+            }
         }
-        LazyColumn(state = list, contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        LazyColumn(state = list, contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
                 SCard(strong = true) {
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("سورة ${s.name}", fontFamily = QuranFont, fontSize = 32.sp, lineHeight = 56.sp, color = look.onCard)
                         Muted(if (ar) "${if (s.meccan) "مكية" else "مدنية"} • ${num(s.ayas, true)} آية • ترتيبها ${num(s.index, true)}" else "${s.tname} · ${s.ename} · ${if (s.meccan) "Makki" else "Madani"} · ${s.ayas} ayat")
+                        VSpace(6.dp)
+                        Chip(t("عن السورة وفضلها", "About this surah"), leading = { PackIcon(Ico.IDEA, 18.dp) }, onClick = { onOpen("surah_info/${s.index}") })
                         if (s.index != 1 && s.index != 9) {
                             VSpace(10.dp)
-                            Text(quran.basmala, fontFamily = QuranFont, fontSize = (size + 2).sp, lineHeight = ((size + 2) * 1.9).sp, color = look.onCard, textAlign = TextAlign.Center)
+                            Text(quran.basmala, fontFamily = QuranFont, fontSize = (prefs.fontSize + 2).sp, lineHeight = ((prefs.fontSize + 2) * 1.9).sp, color = look.onCard, textAlign = TextAlign.Center)
                         }
                     }
                 }
             }
             items(s.ayas, key = { it }) { i ->
                 val a = i + 1
-                val txt = quran.displayAyah(sura, a)
+                val g = quran.global(sura, a)
+                val txt = app.sakina.quran.quran.MushafLayout.ayahText(quran, sura, a, if (prefs.script == 1) simple else null)
                 val marked = "$sura:$a" in user.quranBookmarks
                 val isLast = user.lastSura == sura && user.lastAyah == a
-                SCard(padding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 8.dp), tint = if (isLast) androidx.compose.ui.graphics.lerp(look.card, look.cta, .16f) else null) {
+                val hl = qu.highlights["$sura:$a"]
+                val tint = when {
+                    hl != null -> androidx.compose.ui.graphics.lerp(look.card, HL_COLORS[hl.coerceIn(0, 4)], if (look.dark) .22f else .35f)
+                    isLast -> androidx.compose.ui.graphics.lerp(look.card, look.cta, .16f)
+                    else -> null
+                }
+                SCard(padding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 8.dp), tint = tint, onClick = { sheet = a }) {
                     Rtl {
                         Text(
-                            "$txt ${ayahMark(a)}", fontFamily = QuranFont, fontSize = size.sp, lineHeight = (size * 1.95).sp,
+                            ayahText("$txt ${ayahMark(a)}", prefs.tajweed && prefs.script == 0, prefs.palette, look.dark), fontFamily = QuranFont, fontSize = prefs.fontSize.sp, lineHeight = (prefs.fontSize * 1.95).sp,
                             color = look.onCard, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth(),
                         )
                     }
+                    translit?.getOrNull(g)?.let { tl -> LtrBox { Text(translitText(tl), style = MaterialTheme.typography.bodyMedium, color = look.onCardMuted, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) } }
+                    tr.forEach { (id, arr) ->
+                        val ed = app.sakina.quran.quran.Editions.get(id)
+                        arr?.getOrNull(g)?.let { line ->
+                            Text(
+                                line, style = MaterialTheme.typography.bodyMedium.copy(textDirection = if (ed?.rtl == true) androidx.compose.ui.text.style.TextDirection.Rtl else androidx.compose.ui.text.style.TextDirection.Ltr),
+                                color = look.onCard, modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                            )
+                            if (tr.size > 1) Muted(if (ar) ed?.nameAr.orEmpty() else ed?.nameEn.orEmpty())
+                        }
+                    }
+                    tafsir?.getOrNull(g)?.let { tx ->
+                        Text(
+                            if (tx.length > 420) tx.take(420) + "…" else tx,
+                            style = MaterialTheme.typography.bodySmall.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Rtl),
+                            color = look.onCardMuted, modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                        )
+                    }
+                    qu.notes["$sura:$a"]?.let { n -> Muted("✎ " + n.text.take(120) + if (n.tags.isNotEmpty()) "  " + n.tags.joinToString(" ") { "#$it" } else "", Modifier.padding(top = 4.dp)) }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(if (ar) "${s.name} ${num(a, true)}" else "${s.index}:$a", style = MaterialTheme.typography.labelMedium, color = look.onCardMuted, modifier = Modifier.weight(1f))
+                        if (g in quran.sajdas) Text("۩", color = look.cta, modifier = Modifier.padding(horizontal = 6.dp))
                         IconButton(onClick = { onBookmark(sura, a) }) {
                             Icon(if (marked) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder, t("علامة", "Bookmark"), tint = if (marked) look.cta else look.onCardMuted)
                         }
                         IconButton(onClick = { copyText(ctx, "${quran.ayah(sura, a)} [${s.name}: $a]"); Toast.makeText(ctx, if (ar) "تم النسخ" else "Copied", Toast.LENGTH_SHORT).show() }) {
                             Icon(Icons.Outlined.ContentCopy, t("نسخ", "Copy"), tint = look.onCardMuted)
                         }
-                        IconButton(onClick = {
-                            val body = "${quran.ayah(sura, a)}\n﴿${s.name}: ${num(a, true)}﴾\n— Sakina"
-                            ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, body), null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                        }) { Icon(Icons.Outlined.Share, t("مشاركة", "Share"), tint = look.onCardMuted) }
+                        IconButton(onClick = { onOpen("share/$sura/$a/$a") }) { Icon(Icons.Outlined.Share, t("مشاركة", "Share"), tint = look.onCardMuted) }
                     }
                 }
             }
@@ -305,6 +399,22 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
             }
         }
     }
+    // Auto-scroll control (QR17)
+    Row(
+        Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 14.dp).surface(CircleShape, strong = true).padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = { scrolling = !scrolling }) {
+            Icon(if (scrolling) androidx.compose.material.icons.Icons.Outlined.Pause else androidx.compose.material.icons.Icons.Outlined.PlayArrow, t("تمرير تلقائي", "Auto-scroll"), tint = look.cta)
+        }
+        Text(t("تمرير تلقائي", "Auto-scroll"), style = MaterialTheme.typography.labelLarge, color = look.onCard)
+        IconButton(onClick = { scope.launch { store.updatePrefs { it.copy(autoScroll = (it.autoScroll - 1).coerceAtLeast(1)) } } }) { Icon(Icons.Outlined.TextDecrease, t("أبطأ", "Slower"), tint = look.onCardMuted) }
+        Text(num(prefs.autoScroll, ar), style = MaterialTheme.typography.titleSmall, color = look.onCard)
+        IconButton(onClick = { scope.launch { store.updatePrefs { it.copy(autoScroll = (it.autoScroll + 1).coerceAtMost(10)) } } }) { Icon(Icons.Outlined.TextIncrease, t("أسرع", "Faster"), tint = look.onCardMuted) }
+    }
+    }
+    sheet?.let { a -> quran?.let { q -> AyahSheet(q, sura, a, onDismiss = { sheet = null }, onOpen = { sheet = null; onOpen(it) }, bookmarked = "$sura:$a" in user.quranBookmarks, onBookmark = { onBookmark(sura, a) }) } }
+    if (showSettings) ReaderSettingsSheet(prefs, mushaf = false, onDismiss = { showSettings = false })
 }
 
 
@@ -314,7 +424,19 @@ fun QuranSearch(onBack: () -> Unit, onOpen: (String) -> Unit, initial: String = 
     val look = LocalSakina.current.look
     val ar = isArabic()
     var q by rememberSaveable { mutableStateOf(initial) }
-    val res = remember(q, quran) { quran?.search(q) ?: (0 to emptyList<AyahRef>()) }
+    var scope0 by rememberSaveable { mutableIntStateOf(0) }
+    val qu = rememberQUser()
+    val ctx = LocalContext.current
+    val trId = qu.prefs.activeTranslations(ar).firstOrNull { app.sakina.quran.quran.Editions.available(ctx, it) } ?: "en.sahih"
+    val other = rememberEdition(when (scope0) { 1 -> trId; 2 -> qu.prefs.tafsir; else -> null })
+    val res = remember(q, quran, scope0, other) {
+        when {
+            quran == null -> 0 to emptyList<AyahRef>()
+            scope0 == 0 -> quran.search(q)
+            other == null -> 0 to emptyList()
+            else -> searchEdition(quran, other, q)
+        }
+    }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 6.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("رجوع", "Back"), tint = MaterialTheme.colorScheme.onBackground) }
@@ -326,10 +448,16 @@ fun QuranSearch(onBack: () -> Unit, onOpen: (String) -> Unit, initial: String = 
         ) {
             Icon(Icons.Outlined.Search, null, tint = look.onCardMuted); Spacer(Modifier.width(10.dp))
             Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                if (q.isEmpty()) Muted(t("اكتب كلمة دون تشكيل… مثل: الصبر", "Type an Arabic word… e.g. الصبر"))
+                if (q.isEmpty()) Muted(if (scope0 == 1) t("ابحث في الترجمة… مثل: mercy", "Search the translation… e.g. mercy") else t("اكتب كلمة دون تشكيل… مثل: الصبر", "Type an Arabic word… e.g. الصبر"))
                 BasicTextField(q, { q = it }, singleLine = true, modifier = Modifier.fillMaxWidth(), textStyle = MaterialTheme.typography.bodyLarge.copy(color = look.onCard), cursorBrush = SolidColor(look.cta))
             }
             if (q.isNotEmpty()) Box(Modifier.size(36.dp).clip(CircleShape).press { q = "" }, contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Close, t("مسح", "Clear"), tint = look.onCardMuted) }
+        }
+        VSpace(8.dp)
+        Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Chip(t("نص القرآن", "Quran text"), selected = scope0 == 0, onClick = { scope0 = 0 })
+            Chip(t("الترجمة", "Translation"), selected = scope0 == 1, onClick = { scope0 = 1 })
+            Chip(t("التفسير", "Tafsir"), selected = scope0 == 2, onClick = { scope0 = 2 })
         }
         VSpace(10.dp)
         if (quran == null) { Loading(); return@Column }
@@ -348,10 +476,36 @@ fun QuranSearch(onBack: () -> Unit, onOpen: (String) -> Unit, initial: String = 
                     SCard(onClick = { onOpen("reader/${r.sura}/${r.ayah}") }, padding = PaddingValues(12.dp)) {
                         Text(if (ar) "${s.name} • ${num(r.ayah, true)}" else "${s.tname} ${r.sura}:${r.ayah}", style = MaterialTheme.typography.labelLarge, color = look.cta)
                         VSpace(4.dp)
-                        Rtl { Text(r.text, fontFamily = QuranFont, fontSize = 21.sp, lineHeight = 40.sp, color = look.onCard, modifier = Modifier.fillMaxWidth(), maxLines = 4, overflow = TextOverflow.Ellipsis) }
+                        if (scope0 == 0) Rtl { Text(r.text, fontFamily = QuranFont, fontSize = 21.sp, lineHeight = 40.sp, color = look.onCard, modifier = Modifier.fillMaxWidth(), maxLines = 4, overflow = TextOverflow.Ellipsis) }
+                        else {
+                            Rtl { Text(quran.displayAyah(r.sura, r.ayah), fontFamily = QuranFont, fontSize = 19.sp, lineHeight = 36.sp, color = look.onCard, modifier = Modifier.fillMaxWidth(), maxLines = 2, overflow = TextOverflow.Ellipsis) }
+                            Text(r.text, style = MaterialTheme.typography.bodyMedium, color = look.onCardMuted, maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+                        }
                     }
                 }
             }
         }
     }
+}
+
+/** QR20: search a translation/tafsir edition (diacritic/alef-insensitive, case-insensitive); snippet around the first hit. */
+fun searchEdition(q: Quran, arr: Array<String>, query: String, limit: Int = 200): Pair<Int, List<AyahRef>> {
+    val n = app.sakina.quran.ui.tabs.normalize(query.trim())
+    if (n.length < 2) return 0 to emptyList()
+    val out = ArrayList<AyahRef>(); var total = 0
+    for (g in arr.indices) {
+        val txt = arr[g]; if (txt.isEmpty()) continue
+        val nt = app.sakina.quran.ui.tabs.normalize(txt)
+        val i = nt.indexOf(n)
+        if (i >= 0) {
+            total++
+            if (out.size < limit) {
+                val (s, a) = q.fromGlobal(g)
+                val from = (i - 60).coerceAtLeast(0)
+                val snippet = (if (from > 0) "…" else "") + nt.substring(from, (i + n.length + 140).coerceAtMost(nt.length))
+                out += AyahRef(s, a, if (nt.length == txt.length) txt.substring(from, (i + n.length + 140).coerceAtMost(txt.length)).let { (if (from > 0) "…" else "") + it } else snippet)
+            }
+        }
+    }
+    return total to out
 }
