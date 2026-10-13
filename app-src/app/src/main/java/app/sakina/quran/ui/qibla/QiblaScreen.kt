@@ -118,7 +118,7 @@ fun QiblaScreen(prefs: Prefs, fixedHeading: Float? = null) {
         Text(
             when {
                 !hasSensor -> t("هاتفك لا يحتوي على بوصلة. وجّه هاتفك بزاوية ${qibla.roundToInt()}° من الشمال.", "No compass on this phone. Face ${qibla.roundToInt()}° from north.")
-                aligned -> t("أنت متجه نحو القبلة ✓", "You're facing the Qibla ✓")
+                aligned -> t("أنت متجه نحو القبلة", "You're facing the Qibla ✓")
                 diff > 0 -> t("استدر يمينًا ${abs(diff).roundToInt()}°", "Turn right ${abs(diff).roundToInt()}°")
                 else -> t("استدر يسارًا ${abs(diff).roundToInt()}°", "Turn left ${abs(diff).roundToInt()}°")
             },
