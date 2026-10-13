@@ -260,6 +260,7 @@ private fun SuraRow(s: Sura, ar: Boolean, quranPage: (Sura) -> Int, onClick: () 
                     else "${s.ename} • ${if (s.meccan) "Makki" else "Madani"} • ${s.ayas} ayat",
                 )
             }
+            Spacer(Modifier.width(10.dp))
             if (ar) Muted("ص ${num(quranPage(s), true)}") else Text(s.name, fontFamily = QuranFont, fontSize = 22.sp, color = LocalSakina.current.look.onCard)
         }
     }
@@ -436,7 +437,10 @@ fun QuranSearch(onBack: () -> Unit, onOpen: (String) -> Unit, initial: String = 
     val look = LocalSakina.current.look
     val ar = isArabic()
     var q by rememberSaveable { mutableStateOf(initial) }
-    var scope0 by rememberSaveable { mutableIntStateOf(0) }
+    // A Latin-script query can never match the Arabic text, so it searches the translation instead.
+    fun latinOnly(x: String) = x.any { it in 'a'..'z' || it in 'A'..'Z' } && x.none { it in '\u0600'..'\u06FF' }
+    var scope0 by rememberSaveable { mutableIntStateOf(if (latinOnly(initial)) 1 else 0) }
+    LaunchedEffect(q) { if (scope0 == 0 && q.trim().length >= 2 && latinOnly(q)) scope0 = 1 }
     val qu = rememberQUser()
     val ctx = LocalContext.current
     val trId = qu.prefs.activeTranslations(ar).firstOrNull { app.sakina.quran.quran.Editions.available(ctx, it) } ?: "en.sahih"
@@ -490,7 +494,7 @@ fun QuranSearch(onBack: () -> Unit, onOpen: (String) -> Unit, initial: String = 
                         VSpace(4.dp)
                         if (scope0 == 0) Rtl { Text(r.text, fontFamily = QuranFont, fontSize = 21.sp, lineHeight = 40.sp, color = look.onCard, modifier = Modifier.fillMaxWidth(), maxLines = 4, overflow = TextOverflow.Ellipsis) }
                         else {
-                            Rtl { Text(quran.displayAyah(r.sura, r.ayah), fontFamily = QuranFont, fontSize = 19.sp, lineHeight = 36.sp, color = look.onCard, modifier = Modifier.fillMaxWidth(), maxLines = 2, overflow = TextOverflow.Ellipsis) }
+                            Rtl { Text(glueWaqf(quran.displayAyah(r.sura, r.ayah)), fontFamily = QuranFont, fontSize = 19.sp, lineHeight = 36.sp, color = look.onCard, modifier = Modifier.fillMaxWidth(), maxLines = 2, overflow = TextOverflow.Ellipsis) }
                             Text(r.text, style = MaterialTheme.typography.bodyMedium, color = look.onCardMuted, maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
                         }
                     }
