@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import app.sakina.quran.data.ReaderPrefs
+import app.sakina.quran.quran.Editions
 import app.sakina.quran.quran.MushafLayout
 import app.sakina.quran.quran.Quran
 import app.sakina.quran.quran.Seg
@@ -83,7 +84,10 @@ fun paperFor(p: ReaderPrefs): Paper {
 /** Range of one ayah inside the page's annotated string. */
 private data class AyahRange(val start: Int, val end: Int, val g: Int)
 
-private class PageText(val text: AnnotatedString, val ayat: List<AyahRange>, val headers: List<IntRange>)
+/** A highlighted ayah: drawn behind the text as clean rounded per-line spans (never as span backgrounds). */
+private data class HlRange(val start: Int, val end: Int, val color: Color, val selected: Boolean)
+
+private class PageText(val text: AnnotatedString, val ayat: List<AyahRange>, val headers: List<IntRange>, val hls: List<HlRange>)
 
 private fun buildPage(
     q: Quran, page: Int, prefs: ReaderPrefs, simple: Array<String>?, paper: Paper, highlights: Map<String, Int>, selected: Int?,
@@ -91,7 +95,9 @@ private fun buildPage(
     val segs = MushafLayout.segments(q, page)
     val ayat = ArrayList<AyahRange>(); val headers = ArrayList<IntRange>()
     val center = ParagraphStyle(textAlign = TextAlign.Center, lineHeight = 2.1.em)
-    val body = ParagraphStyle(textAlign = TextAlign.Justify, lineHeight = 1.95.em, textDirection = TextDirection.Rtl)
+    // 2.25em leaves clear room above each line for waqf marks and stacked harakat.
+    val body = ParagraphStyle(textAlign = TextAlign.Justify, lineHeight = 2.25.em, textDirection = TextDirection.Rtl)
+    val hls = ArrayList<HlRange>()
     val text = buildAnnotatedString {
         var i = 0
         while (i < segs.size) {
@@ -114,8 +120,8 @@ private fun buildPage(
                             val end = length
                             append(" ")
                             val hl = highlights["${a.sura}:${a.ayah}"]
-                            if (a.g == selected) addStyle(SpanStyle(background = paper.accent.copy(alpha = .22f)), st, end)
-                            else if (hl != null) addStyle(SpanStyle(background = HL_COLORS[hl.coerceIn(0, 4)].copy(alpha = if (paper.dark) .28f else .38f)), st, end)
+                            if (a.g == selected) hls += HlRange(st, end, paper.accent, true)
+                            else if (hl != null) hls += HlRange(st, end, HL_COLORS[hl.coerceIn(0, 4)], false)
                             ayat += AyahRange(st, end, a.g)
                             i++
                         }
@@ -124,7 +130,7 @@ private fun buildPage(
             }
         }
     }
-    return PageText(text, ayat, headers)
+    return PageText(text, ayat, headers, hls)
 }
 
 /** 604-page mushaf (QR02) with Madinah page boundaries, tajweed colours, highlights and ayah actions. */
@@ -140,6 +146,8 @@ fun MushafScreen(startPage: Int, khatmaId: String?, onBack: () -> Unit, onOpen: 
     val simple = rememberSimple(prefs.script == 1)
     KeepScreenOn(prefs.keepOn)
     ReadingTimer()
+    val ctxW = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(prefs.tafsir) { Editions.prewarm(ctxW, listOf(prefs.tafsir) + prefs.activeTranslations(ar)) }
     val pager = rememberPagerState(initialPage = (startPage.coerceIn(1, 604)) - 1) { 604 }
     val scope = rememberCoroutineScope()
     var chrome by remember { mutableStateOf(true) }
@@ -197,7 +205,7 @@ fun MushafScreen(startPage: Int, khatmaId: String?, onBack: () -> Unit, onOpen: 
                 val r = app.sakina.quran.quran.KhatmaPlan.todayRange(k, today)
                 val left = app.sakina.quran.quran.KhatmaPlan.todayLeft(k, today)
                 Text(
-                    if (left == 0) t("أتممت ورد اليوم ✓ — ${k.name}", "Today's wird complete ✓ — ${k.name}")
+                    if (left == 0) t("أتممت ورد اليوم — ${k.name}", "Today's wird complete ✓ — ${k.name}")
                     else t("ورد اليوم: ص ${num(r.first, true)}–${num(r.last, true)} • بقي ${num(left, true)}", "Wird: p. ${r.first}–${r.last} • $left left"),
                     style = MaterialTheme.typography.labelLarge, color = paper.accent, modifier = Modifier.weight(1f), maxLines = 1,
                 )
@@ -244,6 +252,28 @@ private fun MushafPage(q: Quran, page: Int, prefs: ReaderPrefs, simple: Array<St
                 modifier = Modifier.fillMaxWidth()
                     .drawBehind {
                         val l = layout ?: return@drawBehind
+                        // Highlights: one rounded pill per line the ayah covers, inset inside the line box so
+                        // neighbouring lines never touch; soft fill + thin edge keeps tajweed colours readable.
+                        val n = l.layoutInput.text.length
+                        for (h in pt.hls) {
+                            if (h.start >= n) continue
+                            val e = h.end.coerceAtMost(n)
+                            val first = l.getLineForOffset(h.start); val last = l.getLineForOffset((e - 1).coerceAtLeast(h.start))
+                            for (line in first..last) {
+                                val ls = l.getLineStart(line); val le = l.getLineEnd(line, visibleEnd = true)
+                                val a = maxOf(h.start, ls); val b = minOf(e, le)
+                                if (b <= a) continue
+                                val xa = if (a == ls) l.getLineRight(line) else l.getHorizontalPosition(a, usePrimaryDirection = true)
+                                val xb = if (b >= le) l.getLineLeft(line) else l.getHorizontalPosition(b, usePrimaryDirection = true)
+                                val left = minOf(xa, xb) - 6f; val right = maxOf(xa, xb) + 6f
+                                val top = l.getLineTop(line); val bottom = l.getLineBottom(line); val lh = bottom - top
+                                val t0 = top + lh * .14f; val b0 = bottom - lh * .10f
+                                val r = CornerRadius(lh * .22f, lh * .22f)
+                                val fill = h.color.copy(alpha = if (h.selected) (if (paper.dark) .16f else .20f) else (if (paper.dark) .17f else .24f))
+                                drawRoundRect(fill, Offset(left.coerceAtLeast(0f), t0), Size((right - left).coerceAtMost(size.width), b0 - t0), r)
+                                drawRoundRect(h.color.copy(alpha = if (h.selected) .75f else .45f), Offset(left.coerceAtLeast(0f), t0), Size((right - left).coerceAtMost(size.width), b0 - t0), r, style = Stroke(width = if (h.selected) 2.4f else 1.4f))
+                            }
+                        }
                         for (h in pt.headers) {
                             if (h.first >= l.layoutInput.text.length) continue
                             val line = l.getLineForOffset(h.first)
