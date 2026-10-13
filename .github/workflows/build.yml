@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v4
-        with: { gradle-version: '8.14.3' }
+        with: { gradle-version: '8.14.3', cache-cleanup: never }
       - name: CI gradle props
         working-directory: app-src
         run: |
@@ -38,7 +38,9 @@ jobs:
         if: success()
         continue-on-error: true
         timeout-minutes: 35
-        run: timeout 1900 bash ci/emu.sh > emu.log 2>&1 || true
+        run: |
+          timeout 1900 bash ci/emu.sh > emu.log 2>&1 || true
+          adb emu kill 2>/dev/null || true; sleep 3; pkill -9 -f qemu-system 2>/dev/null || true
       - name: Publish results to ci-out branch
         if: always()
         run: |
