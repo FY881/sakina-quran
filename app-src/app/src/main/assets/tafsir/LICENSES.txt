@@ -1,0 +1,13 @@
+Sakina — Quran tafsir / translation sources (bundled files are verbatim Tanzil exports, gzip-compressed; each keeps its Tanzil header)
+
+ar.muyassar.txt.gz   التفسير الميسر — King Fahad Quran Complex — via Tanzil (https://tanzil.net/trans/), md5 of text cd50f90a18aee027083280cd576f83d0
+ar.jalalayn.txt.gz   تفسير الجلالين — al-Mahalli & as-Suyuti — via Tanzil, md5 10fa9c0aa2b88ca00df5e5851bec4804
+en.sahih.txt.gz      Saheeh International — via Tanzil, md5 f04b8e73a9e32c15803b3721ea47896f
+en.transliteration.txt.gz  English transliteration — via Tanzil, md5 1af10c137a1a3cfd2b81ef7a3cb2eb0e
+Terms (https://tanzil.net/trans/): "For non-commercial purposes only. If used otherwise, you need permission from the translator or publisher."
+Sakina is free with no ads, subscriptions or in-app purchases. More than three translations are offered, so the app links back to https://tanzil.net/trans/ in its credits.
+
+On-demand packs (downloaded by the user's own device, never bundled):
+- Tanzil translations (fr.hamidullah, ur.jalandhry, id.indonesian, tr.diyanet, ms.basmeih, es.cortes, de.bubenheim, ru.kuliev, bn.bengali, fa.makarem, sw.barwani, ha.gumi, so.abduh, zh.jian, hi.hindi) from https://tanzil.net/trans/?transID=<id>&type=txt-2 — same Tanzil terms.
+- Classical tafsir al-Qurtubi and al-Baghawi (pre-modern works) from the Al Quran Cloud API (https://api.alquran.cloud/v1/quran/ar.qurtubi, ar.baghawi). Terms https://alquran.cloud/terms-and-conditions : text may be reproduced, stored and displayed freely for non-commercial purposes, translators/authors attributed by name.
+Not offered (licence unclear or needs an account): Ibn Kathir, as-Sa'di, al-Mukhtasar, al-Waseet (modern, copyrighted), Quran Foundation content (backend-only, 7-day cache cap).
