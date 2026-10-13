@@ -217,7 +217,7 @@ fun TasbihScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(num(if (target > 0 && round == 0 && count > 0) target else round, ar), fontSize = 72.sp, fontWeight = FontWeight.Bold, color = look.onCard)
                         Muted(if (target > 0) t("من ${num(target, true)}", "of $target") else t("بلا هدف", "No target"))
-                        if (rounds > 0) Text(t("الدورة ${num(rounds, true)} ✓", "Round $rounds ✓"), color = look.cta, style = MaterialTheme.typography.labelLarge)
+                        if (rounds > 0) Text(t("الدورة ${num(rounds, true)}", "Round $rounds ✓"), color = look.cta, style = MaterialTheme.typography.labelLarge)
                     }
                 }
                 VSpace(8.dp)
