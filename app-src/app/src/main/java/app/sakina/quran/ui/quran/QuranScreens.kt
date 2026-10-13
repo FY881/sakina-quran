@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -180,7 +183,7 @@ fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
                     else {
                         val today = java.time.LocalDate.now()
                         val left = app.sakina.quran.quran.KhatmaPlan.todayLeft(k, today)
-                        Muted(if (app.sakina.quran.quran.KhatmaPlan.isDone(k)) t("أتممت الختمة ✓", "Khatma complete ✓") else if (left == 0) t("أتممت ورد اليوم ✓", "Today's wird done ✓") else t("بقي ${num(left, true)} صفحة اليوم", "$left pages left today"))
+                        Muted(if (app.sakina.quran.quran.KhatmaPlan.isDone(k)) t("أتممت الختمة", "Khatma complete ✓") else if (left == 0) t("أتممت ورد اليوم", "Today's wird done ✓") else t("بقي ${num(left, true)} صفحة اليوم", "$left pages left today"))
                         VSpace(6.dp)
                         Bar(app.sakina.quran.quran.KhatmaPlan.done(k).toFloat() / app.sakina.quran.quran.KhatmaPlan.total(k))
                     }
@@ -237,7 +240,7 @@ fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
         item {
             Muted(
                 t("نص المصحف: مشروع تنزيل (tanzil.net) دون أي تعديل", "Quran text: Tanzil Project (tanzil.net), unaltered") +
-                    if (quran.verified) t(" • ✓ تم التحقق من سلامة النص (MD5)", " • ✓ text integrity verified (MD5)") else t(" • ⚠ تعذّر التحقق من سلامة النص", " • ⚠ text integrity check failed"),
+                    if (quran.verified) t(" • تم التحقق من سلامة النص (MD5)", " • ✓ text integrity verified (MD5)") else t(" • ⚠ تعذّر التحقق من سلامة النص", " • ⚠ text integrity check failed"),
                 Modifier.fillMaxWidth().padding(8.dp),
             )
         }
@@ -285,6 +288,8 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
     var sheet by remember { mutableStateOf<Int?>(null) }
     var showSettings by remember { mutableStateOf(false) }
     var scrolling by remember { mutableStateOf(false) }
+    var autoBar by remember { mutableStateOf(false) }
+    LaunchedEffect(prefs.tafsir) { app.sakina.quran.quran.Editions.prewarm(ctx, listOf(prefs.tafsir)) }
     KeepScreenOn(prefs.keepOn)
     ReadingTimer()
     // QR17: hands-free auto-scroll.
@@ -293,7 +298,7 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
         while (true) {
             androidx.compose.runtime.withFrameNanos { }
             val moved = list.scrollBy(prefs.autoScroll * 0.35f)
-            if (moved == 0f && !list.canScrollForward) { scrolling = false; break }
+            if (moved == 0f && !list.canScrollForward) { scrolling = false; autoBar = false; break }
         }
     }
     Box(Modifier.fillMaxSize()) {
@@ -311,6 +316,9 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
             IconButton(onClick = { scope.launch { store.updatePrefs { it.copy(tajweed = !it.tajweed) } } }) {
                 Icon(androidx.compose.material.icons.Icons.Outlined.Palette, t("ألوان التجويد", "Tajweed colours"), tint = if (prefs.tajweed) look.cta else MaterialTheme.colorScheme.onBackground)
             }
+            IconButton(onClick = { if (autoBar) { autoBar = false; scrolling = false } else { autoBar = true; scrolling = true } }) {
+                Icon(androidx.compose.material.icons.Icons.Outlined.KeyboardDoubleArrowDown, t("تمرير تلقائي", "Auto-scroll"), tint = if (autoBar) look.cta else MaterialTheme.colorScheme.onBackground)
+            }
             IconButton(onClick = { showSettings = true }) { Icon(androidx.compose.material.icons.Icons.Outlined.Tune, t("إعدادات القراءة", "Reading settings"), tint = MaterialTheme.colorScheme.onBackground) }
             IconButton(onClick = {
                 quran?.let { q -> val first = list.firstVisibleItemIndex.coerceIn(1, q.suras[sura - 1].ayas); onOpen("mushaf/${q.page(sura, first)}") }
@@ -324,7 +332,9 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
                 val a = i.coerceIn(1, s.ayas); onSaveLast(sura, a); runCatching { store.logPage(quran.page(sura, a)) }
             }
         }
-        LazyColumn(state = list, contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Bottom room: nav bar + (when the auto-scroll bar is up) its full height, so the last ayah never sits under it.
+        val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        LazyColumn(state = list, contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = navBottom + if (autoBar) 104.dp else 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
                 SCard(strong = true) {
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -399,8 +409,8 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
             }
         }
     }
-    // Auto-scroll control (QR17)
-    Row(
+    // Auto-scroll control (QR17): only shown once auto-scroll is started from the top bar, never over idle reading.
+    if (autoBar) Row(
         Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 14.dp).surface(CircleShape, strong = true).padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -411,6 +421,7 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
         IconButton(onClick = { scope.launch { store.updatePrefs { it.copy(autoScroll = (it.autoScroll - 1).coerceAtLeast(1)) } } }) { Icon(Icons.Outlined.TextDecrease, t("أبطأ", "Slower"), tint = look.onCardMuted) }
         Text(num(prefs.autoScroll, ar), style = MaterialTheme.typography.titleSmall, color = look.onCard)
         IconButton(onClick = { scope.launch { store.updatePrefs { it.copy(autoScroll = (it.autoScroll + 1).coerceAtMost(10)) } } }) { Icon(Icons.Outlined.TextIncrease, t("أسرع", "Faster"), tint = look.onCardMuted) }
+        IconButton(onClick = { scrolling = false; autoBar = false }) { Icon(androidx.compose.material.icons.Icons.Outlined.Close, t("إغلاق", "Close"), tint = look.onCardMuted) }
     }
     }
     sheet?.let { a -> quran?.let { q -> AyahSheet(q, sura, a, onDismiss = { sheet = null }, onOpen = { sheet = null; onOpen(it) }, bookmarked = "$sura:$a" in user.quranBookmarks, onBookmark = { onBookmark(sura, a) }) } }
