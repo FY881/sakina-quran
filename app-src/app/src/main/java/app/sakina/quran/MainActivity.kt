@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
     private var openRoute by mutableStateOf<String?>(null)
 
     private fun routeFrom(i: Intent?): String? = i?.getStringExtra("open")?.takeIf { r ->
-        r.startsWith("azkar/") || r in setOf("azkar", "tasbih", "prayers", "quran", "duas", "ruqyah")
+        r.startsWith("azkar/") || r in setOf("azkar", "tasbih", "prayers", "quran", "duas", "ruqyah", "khatma", "mushaf")
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -111,5 +111,9 @@ class MainActivity : AppCompatActivity() {
         if (theme != null || mode != null || glass != null || icons != null || onboarded != null) {
             repo.debugApply(theme, mode, glass, icons, onboarded)
         }
+        // Q2 CI: sample Quran data and reader settings ("qseed=1", "qset=tajweed=1,paper=1").
+        val qs = app.sakina.quran.data.QuranStore(applicationContext)
+        if (i.getStringExtra("qseed") == "1") runCatching { app.sakina.quran.debug.DebugSeed.seed(qs, i.getStringExtra("lang") != "en") }
+        i.getStringExtra("qset")?.let { spec -> runCatching { app.sakina.quran.debug.DebugSeed.applyPrefs(qs, spec) } }
     }
 }
