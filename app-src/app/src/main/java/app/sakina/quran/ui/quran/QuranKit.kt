@@ -32,6 +32,7 @@ import app.sakina.quran.quran.Tajweed
 import app.sakina.quran.quran.parseTranslit
 import app.sakina.quran.ui.common.num
 import app.sakina.quran.ui.theme.LocalSakina
+import app.sakina.quran.ui.kit.press
 
 /** The Quran store, provided by AppRoot. */
 val LocalQStore = staticCompositionLocalOf<QuranStore> { error("QuranStore missing") }
@@ -43,12 +44,45 @@ fun rememberQUser(): QuranUser {
     return q
 }
 
-/** Loads a tafsir/translation edition (null while loading or when not downloaded). */
+/** Loading state of an edition. */
+sealed interface EdState {
+    data object Loading : EdState
+    data object Error : EdState
+    data class Ready(val data: Array<String>) : EdState
+}
+
+/** Loads an edition off the main thread with an explicit error state; [retry] bumps to reload. */
 @Composable
-fun rememberEdition(id: String?): Array<String>? {
+fun rememberEditionState(id: String?, retry: Int = 0): EdState? {
     val ctx = LocalContext.current
-    val v by produceState<Array<String>?>(null, id) { value = if (id == null) null else runCatching { Editions.load(ctx, id) }.getOrNull() }
+    if (id == null) return null
+    val v by produceState<EdState>(Editions.cached(id)?.let { EdState.Ready(it) } ?: EdState.Loading, id, retry) {
+        if (value is EdState.Ready) return@produceState
+        value = EdState.Loading
+        val r = runCatching { kotlinx.coroutines.withTimeout(20_000) { Editions.load(ctx, id) } }.getOrNull()
+        value = if (r != null) EdState.Ready(r) else EdState.Error
+    }
     return v
+}
+
+/** Loads a tafsir/translation edition (null while loading, on error, or when not downloaded). */
+@Composable
+fun rememberEdition(id: String?): Array<String>? = (rememberEditionState(id) as? EdState.Ready)?.data
+
+/** Error line with a retry action, used where an edition failed to load. */
+@Composable
+fun EditionError(onRetry: () -> Unit) {
+    val look = LocalSakina.current.look
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(
+            app.sakina.quran.ui.common.t("تعذّر تحميل التفسير.", "Couldn't load this edition."),
+            style = MaterialTheme.typography.bodyMedium, color = look.onCardMuted, modifier = Modifier.weight(1f),
+        )
+        Text(
+            app.sakina.quran.ui.common.t("إعادة المحاولة", "Retry"), style = MaterialTheme.typography.labelLarge, color = look.cta,
+            modifier = Modifier.clip(CircleShape).border(1.dp, look.cta.copy(alpha = .5f), CircleShape).press { onRetry() }.padding(horizontal = 14.dp, vertical = 6.dp),
+        )
+    }
 }
 
 /** Simple (Imlaei) script, loaded only when [enabled]. */
