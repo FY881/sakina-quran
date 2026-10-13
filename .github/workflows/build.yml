@@ -9,7 +9,7 @@ concurrency: { group: build, cancel-in-progress: true }
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - name: Reassemble large files
@@ -29,27 +29,66 @@ jobs:
         run: |
           set -o pipefail
           gradle --no-daemon --console=plain testDebugUnitTest assembleDebug 2>&1 | tee ../build.log
+      - name: Collect build outputs
+        if: always()
+        run: |
+          mkdir -p /tmp/build-out
+          cp build.log /tmp/build-out/ 2>/dev/null || true
+          grep -E "^e: |^w: .*error|FAILED|What went wrong|BUILD|tests completed|> Task .*FAILED" -A3 build.log > /tmp/build-out/summary.txt 2>/dev/null || true
+          find app-src/app/build/test-results -name '*.xml' -exec cp {} /tmp/build-out/ \; 2>/dev/null || true
+          cp app-src/app/build/outputs/apk/debug/*.apk /tmp/build-out/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: build-out, path: /tmp/build-out, retention-days: 3 }
+
+  # One emulator per screenshot set, in parallel, so no set is cut off by a shared time limit.
+  shots:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        set: [ar_dark, en_dark, ar_light]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: build-out, path: build-out }
+      - name: Place APK
+        run: |
+          mkdir -p app-src/app/build/outputs/apk/debug
+          cp build-out/*.apk app-src/app/build/outputs/apk/debug/
       - name: Enable KVM
-        if: success()
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
-      - name: Screenshots on emulator
-        if: success()
+      - name: Screenshots on emulator (${{ matrix.set }})
         continue-on-error: true
-        timeout-minutes: 35
+        timeout-minutes: 38
+        env: { SHOT_SET: '${{ matrix.set }}' }
         run: |
-          timeout 1900 bash ci/emu.sh > emu.log 2>&1 || true
+          timeout 2200 bash ci/emu.sh > emu_${SHOT_SET}.log 2>&1 || true
           adb emu kill 2>/dev/null || true; sleep 3; pkill -9 -f qemu-system 2>/dev/null || true
-      - name: Publish results to ci-out branch
+          mkdir -p shots; cp emu_${SHOT_SET}.log shots/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
         if: always()
+        with: { name: 'shots-${{ matrix.set }}', path: shots, retention-days: 3 }
+
+  publish:
+    needs: [build, shots]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: /tmp/art }
+      - name: Publish results to ci-out branch
         run: |
-          mkdir -p /tmp/out && cp -r shots /tmp/out/ 2>/dev/null || true
-          cp build.log emu.log emu_run.log /tmp/out/ 2>/dev/null || true
-          grep -E "^e: |^w: .*error|FAILED|What went wrong|BUILD|tests completed|> Task .*FAILED" -A3 build.log > /tmp/out/summary.txt 2>/dev/null || true
-          find app-src/app/build/test-results -name '*.xml' -exec cp {} /tmp/out/ \; 2>/dev/null || true
-          cp app-src/app/build/outputs/apk/debug/*.apk /tmp/out/ 2>/dev/null || true
-          echo "${{ job.status }} $(date -u)" > /tmp/out/status.txt
+          mkdir -p /tmp/out/shots
+          cp -r /tmp/art/build-out/. /tmp/out/ 2>/dev/null || true
+          for d in /tmp/art/shots-*; do cp -r "$d"/. /tmp/out/shots/ 2>/dev/null || true; done
+          ls /tmp/out/shots | wc -l
+          echo "build=${{ needs.build.result }} shots=${{ needs.shots.result }} $(date -u)" > /tmp/out/status.txt
           cd /tmp/out && git init -q && git checkout -q -b ci-out && git add -A
           git -c user.name=ci -c user.email=ci@local commit -qm "ci ${{ github.sha }}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-out
