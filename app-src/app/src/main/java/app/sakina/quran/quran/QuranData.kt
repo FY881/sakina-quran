@@ -77,6 +77,18 @@ class Quran(
         /** MD5 of Tanzil's simple text (Simple 1.1, pause marks + sajdah + tatweel) before gzip. */
         const val SIMPLE_MD5 = "721dfdd25357d209012fea09bfc74768"
 
+        /**
+         * Reads a bundled asset that is stored gzipped in the source tree. The Android asset merger
+         * un-gzips "*.gz" assets and drops the extension, so the APK holds the plain file: try that
+         * first, then the gzipped name (unit tests / other packagers). Bytes are identical either way.
+         */
+        fun assetBytes(ctx: Context, gzPath: String): ByteArray {
+            val plain = gzPath.removeSuffix(".gz")
+            return runCatching { ctx.assets.open(plain).use { it.readBytes() } }.getOrElse {
+                java.util.zip.GZIPInputStream(ctx.assets.open(gzPath)).use { it.readBytes() }
+            }
+        }
+
         fun md5(b: ByteArray): String = java.security.MessageDigest.getInstance("MD5").digest(b).joinToString("") { "%02x".format(it) }
 
         /** Parses Tanzil "sura|aya|text" lines (comments '#' skipped) into a 6236-slot array. */
@@ -100,7 +112,7 @@ class Quran(
         /** Tanzil "simple" (Imlaei) script, loaded on demand (QR13). */
         suspend fun simple(ctx: Context): Array<String> = simpleCache ?: withContext(Dispatchers.IO) {
             val q = load(ctx)
-            val bytes = java.util.zip.GZIPInputStream(ctx.assets.open("quran/quran-simple.txt.gz")).use { it.readBytes() }
+            val bytes = assetBytes(ctx, "quran/quran-simple.txt.gz")
             simpleVerified = md5(bytes) == SIMPLE_MD5
             parseTanzil(String(bytes, Charsets.UTF_8), q.suras).also { simpleCache = it }
         }
