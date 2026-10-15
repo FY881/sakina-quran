@@ -123,6 +123,8 @@ object Recitation {
     }
 
     private fun start(ctx: Context, spec: PlaySpec, items: List<MediaItem>, index: Int, posMs: Long, repeatMode: Int) {
+        // One voice at a time: a dhikr / ayah preview clip never plays over the recitation.
+        app.sakina.quran.azkar.DhikrAudio.stop()
         AudioPrefs.load(ctx)
         AudioBus.spec.value = spec
         AudioBus.set { it.copy(active = true, error = null, errorDetail = "", buffering = true, mode = spec.mode, who = spec.who, reciterAr = spec.reciterAr, reciterEn = spec.reciterEn, fromG = spec.fromG, toG = spec.toG, repeat = spec.repeat, pass = 0) }
