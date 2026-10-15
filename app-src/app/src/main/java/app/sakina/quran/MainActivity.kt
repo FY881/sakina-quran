@@ -32,12 +32,13 @@ object VolumeKeys {
 }
 
 class MainActivity : AppCompatActivity() {
+    private companion object { @Volatile var debugPlayed = false }
     private var ready by mutableStateOf(false)
     /** In-app route requested by a notification (allow-listed). */
     private var openRoute by mutableStateOf<String?>(null)
 
     private fun routeFrom(i: Intent?): String? = i?.getStringExtra("open")?.takeIf { r ->
-        r.startsWith("azkar/") || r in setOf("azkar", "tasbih", "prayers", "quran", "duas", "ruqyah", "khatma", "mushaf")
+        r.startsWith("azkar/") || r in setOf("azkar", "tasbih", "prayers", "quran", "duas", "ruqyah", "khatma", "mushaf", "player")
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -72,6 +73,7 @@ class MainActivity : AppCompatActivity() {
             repo.now() // first load done → release splash
             ready = true
         }
+        if (BuildConfig.DEBUG) applyDebugPlay()
         setContent {
             val prefs: Prefs? by repo.prefs.collectAsStateWithLifecycle(initialValue = null)
             val p = prefs
@@ -83,6 +85,44 @@ class MainActivity : AppCompatActivity() {
                         enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
                     }
                     AppRoot(repo, user, p, startRoute, openRoute = openRoute, onOpened = { openRoute = null })
+                }
+            }
+        }
+    }
+
+    /**
+     * Debug/CI only (AU1 shots): `--es play test:2:255` (bundled tone clip per ayah, from 2:255 to the end of the surah),
+     * `ayah:2:255` (ayah-by-ayah stream with the chosen voice) or `surah:1:1` (whole-surah file of the chosen reciter, from that ayah).
+     */
+    private fun applyDebugPlay() {
+        val spec = intent?.getStringExtra("play")?.takeIf { it.isNotBlank() } ?: return
+        if (debugPlayed) return // once per process: a language-switch recreation must not restart it
+        val parts = spec.split(':')
+        val kind = parts[0]
+        val sura = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(1, 114) ?: 1
+        val ayah = parts.getOrNull(2)?.toIntOrNull()?.coerceAtLeast(1) ?: 1
+        val arabic = intent?.getStringExtra("lang") != "en"
+        lifecycleScope.launch {
+            runCatching {
+                val ctx = applicationContext
+                val q = app.sakina.quran.quran.Quran.load(ctx)
+                val su = q.suras[sura - 1]
+                val a = ayah.coerceAtMost(su.ayas)
+                val g = q.global(sura, a)
+                val rp = app.sakina.quran.data.QuranStore(ctx).now().prefs
+                val voice = app.sakina.quran.audio.AyahVoices.byId(rp.ayahVoice)
+                val rec = app.sakina.quran.audio.Recitation
+                debugPlayed = true
+                when (kind) {
+                    "test" -> rec.playAyahs(ctx, q, voice, g, su.start + su.ayas - 1, g, arabic = arabic, test = true)
+                    "ayah" -> rec.playAyahs(ctx, q, voice, g, su.start + su.ayas - 1, g, arabic = arabic)
+                    "surah" -> {
+                        val all = app.sakina.quran.quran.Reciters.load(ctx)
+                        val r = all.firstOrNull { it.id == rp.reciter } ?: all.first()
+                        val m = r.moshafs.firstOrNull { it.id == rp.moshaf && it.has(sura) } ?: r.moshafs.first { it.has(sura) }
+                        rec.playSurah(ctx, q, r, m, sura, a, arabic = arabic)
+                    }
+                    else -> debugPlayed = false
                 }
             }
         }
