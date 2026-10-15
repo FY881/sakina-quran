@@ -42,4 +42,5 @@
     <string name="minutes_only">%1$d min</string>
     <string name="free_badge">Free forever • No ads</string>
     <string name="widget_desc">Next prayer with a live countdown and today\'s times</string>
+    <string name="ch_recitation">Quran recitation</string>
 </resources>
