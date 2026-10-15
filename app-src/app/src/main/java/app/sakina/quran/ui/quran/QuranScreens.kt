@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -137,6 +139,10 @@ fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
     val look = LocalSakina.current.look
     val open = rememberFeatureOpener(onOpen)
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    val audioCtx = LocalContext.current
+    LaunchedEffect(Unit) { app.sakina.quran.audio.AudioPrefs.load(audioCtx) }
+    val audioActive = app.sakina.quran.ui.audio.rememberAudio().active
+    val lastListen = app.sakina.quran.audio.AudioPrefs.last.collectAsStateWithLifecycle().value
     LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             TabTitle(t("القرآن الكريم", "The Holy Quran")) {
@@ -168,6 +174,8 @@ fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
                 }
             }
         }
+        // AU1: continue listening / now playing (renders nothing until there is a session to resume).
+        if (audioActive || lastListen != null) item(key = "listen") { app.sakina.quran.ui.audio.ContinueListeningCard(quran, onOpen) }
         // Mushaf + today's wird (QR02 / QR29)
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -329,6 +337,19 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
         if (quran == null) { Loading(); return@Column }
         val s = quran.suras[sura - 1]
         LaunchedEffect(sura) { if (startAyah > 1) list.scrollToItem(startAyah.coerceIn(1, s.ayas)) }
+        // AU1: highlight the ayah being recited; with "follow" on, keep it in view.
+        val playingG = rememberPlayingAyah(quran)
+        val follow = rememberAudioFollow()
+        val playColor = playingColor(look.dark)
+        LaunchedEffect(playingG, follow) {
+            val g = playingG ?: return@LaunchedEffect
+            if (!follow) return@LaunchedEffect
+            val (ps, pa) = quran.fromGlobal(g)
+            if (ps != sura || list.isScrollInProgress) return@LaunchedEffect
+            val vis = list.layoutInfo.visibleItemsInfo
+            val shown = vis.firstOrNull { it.index == pa }?.let { it.offset >= list.layoutInfo.viewportStartOffset && it.offset + it.size <= list.layoutInfo.viewportEndOffset } ?: false
+            if (!shown) runCatching { list.animateScrollToItem(pa.coerceIn(1, s.ayas), -24) }
+        }
         LaunchedEffect(sura) {
             snapshotFlow { list.firstVisibleItemIndex }.distinctUntilChanged().debounce(800).collect { i ->
                 val a = i.coerceIn(1, s.ayas); onSaveLast(sura, a); runCatching { store.logPage(quran.page(sura, a)) }
@@ -358,12 +379,17 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
                 val marked = "$sura:$a" in user.quranBookmarks
                 val isLast = user.lastSura == sura && user.lastAyah == a
                 val hl = qu.highlights["$sura:$a"]
+                val isPlaying = g == playingG
                 val tint = when {
+                    isPlaying -> androidx.compose.ui.graphics.lerp(look.card, playColor, if (look.dark) .24f else .18f)
                     hl != null -> androidx.compose.ui.graphics.lerp(look.card, HL_COLORS[hl.coerceIn(0, 4)], if (look.dark) .22f else .35f)
                     isLast -> androidx.compose.ui.graphics.lerp(look.card, look.cta, .16f)
                     else -> null
                 }
-                SCard(padding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 8.dp), tint = tint, onClick = { sheet = a }) {
+                SCard(
+                    modifier = if (isPlaying) Modifier.border(2.dp, playColor.copy(alpha = .9f), app.sakina.quran.ui.kit.CardShape) else Modifier,
+                    padding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 8.dp), tint = tint, onClick = { sheet = a },
+                ) {
                     Rtl {
                         Text(
                             ayahText("$txt ${ayahMark(a)}", prefs.tajweed && prefs.script == 0, prefs.palette, look.dark), fontFamily = QuranFont, fontSize = prefs.fontSize.sp, lineHeight = (prefs.fontSize * 1.95).sp,
