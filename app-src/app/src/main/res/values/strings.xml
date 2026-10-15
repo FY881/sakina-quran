@@ -42,4 +42,5 @@
     <string name="minutes_only">%1$d دقيقة</string>
     <string name="free_badge">مجاني للأبد • بلا إعلانات</string>
     <string name="widget_desc">الصلاة القادمة مع عدّاد تنازلي ومواقيت اليوم</string>
+    <string name="ch_recitation">تلاوة القرآن</string>
 </resources>
