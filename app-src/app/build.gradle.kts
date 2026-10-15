@@ -78,6 +78,10 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("com.batoulapps.adhan:adhan:1.2.1")
     implementation("dev.chrisbanes.haze:haze-android:1.7.2")
+    // AU1 recitation audio: Media3 player + session (background, lock screen) and WorkManager downloads.
+    implementation("androidx.media3:media3-exoplayer:1.11.1")
+    implementation("androidx.media3:media3-session:1.11.1")
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
