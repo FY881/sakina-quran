@@ -85,12 +85,12 @@ fun paperFor(p: ReaderPrefs): Paper {
 private data class AyahRange(val start: Int, val end: Int, val g: Int)
 
 /** A highlighted ayah: drawn behind the text as clean rounded per-line spans (never as span backgrounds). */
-private data class HlRange(val start: Int, val end: Int, val color: Color, val selected: Boolean)
+private data class HlRange(val start: Int, val end: Int, val color: Color, val selected: Boolean, val playing: Boolean = false)
 
 private class PageText(val text: AnnotatedString, val ayat: List<AyahRange>, val headers: List<IntRange>, val hls: List<HlRange>)
 
 private fun buildPage(
-    q: Quran, page: Int, prefs: ReaderPrefs, simple: Array<String>?, paper: Paper, highlights: Map<String, Int>, selected: Int?,
+    q: Quran, page: Int, prefs: ReaderPrefs, simple: Array<String>?, paper: Paper, highlights: Map<String, Int>, selected: Int?, playing: Int? = null,
 ): PageText {
     val segs = MushafLayout.segments(q, page)
     val ayat = ArrayList<AyahRange>(); val headers = ArrayList<IntRange>()
@@ -120,7 +120,8 @@ private fun buildPage(
                             val end = length
                             append(" ")
                             val hl = highlights["${a.sura}:${a.ayah}"]
-                            if (a.g == selected) hls += HlRange(st, end, paper.accent, true)
+                            if (a.g == playing) hls += HlRange(st, end, playingColor(paper.dark), selected = false, playing = true)
+                            else if (a.g == selected) hls += HlRange(st, end, paper.accent, true)
                             else if (hl != null) hls += HlRange(st, end, HL_COLORS[hl.coerceIn(0, 4)], false)
                             ayat += AyahRange(st, end, a.g)
                             i++
@@ -154,6 +155,17 @@ fun MushafScreen(startPage: Int, khatmaId: String?, onBack: () -> Unit, onOpen: 
     var sheetAyah by remember { mutableStateOf<Int?>(null) }
     var showIndex by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    // AU1: the ayah being recited is highlighted; with "follow" on, the page turns with the recitation.
+    val playingG = rememberPlayingAyah(quran)
+    val follow = rememberAudioFollow()
+    LaunchedEffect(playingG, follow) {
+        val q = quran ?: return@LaunchedEffect
+        val g = playingG ?: return@LaunchedEffect
+        if (!follow) return@LaunchedEffect
+        val (ps, pa) = q.fromGlobal(g)
+        val target = q.page(ps, pa).coerceIn(1, 604) - 1
+        if (target != pager.currentPage && !pager.isScrollInProgress) runCatching { pager.animateScrollToPage(target) }
+    }
     LaunchedEffect(pager.settledPage, quran) {
         val p = pager.settledPage + 1
         runCatching { store.logPage(p, khatmaId) }
@@ -192,7 +204,7 @@ fun MushafScreen(startPage: Int, khatmaId: String?, onBack: () -> Unit, onOpen: 
         RtlBox {
             HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxWidth(), beyondViewportPageCount = 1, key = { it }) { idx ->
                 MushafPage(
-                    quran, idx + 1, prefs, simple, paper, qu.highlights, sheetAyah,
+                    quran, idx + 1, prefs, simple, paper, qu.highlights, sheetAyah, playingG,
                     onTap = { g -> if (g == null) chrome = !chrome else sheetAyah = g },
                 )
             }
@@ -221,8 +233,10 @@ fun MushafScreen(startPage: Int, khatmaId: String?, onBack: () -> Unit, onOpen: 
 }
 
 @Composable
-private fun MushafPage(q: Quran, page: Int, prefs: ReaderPrefs, simple: Array<String>?, paper: Paper, highlights: Map<String, Int>, selected: Int?, onTap: (Int?) -> Unit) {
-    val pt = remember(page, prefs.script, prefs.tajweed, prefs.palette, simple, paper, highlights, selected) { buildPage(q, page, prefs, simple, paper, highlights, selected) }
+private fun MushafPage(q: Quran, page: Int, prefs: ReaderPrefs, simple: Array<String>?, paper: Paper, highlights: Map<String, Int>, selected: Int?, playing: Int?, onTap: (Int?) -> Unit) {
+    // Only pages that hold the playing ayah rebuild when it moves.
+    val playHere = playing?.takeIf { g -> val (ps, pa) = q.fromGlobal(g); q.page(ps, pa) == page }
+    val pt = remember(page, prefs.script, prefs.tajweed, prefs.palette, simple, paper, highlights, selected, playHere) { buildPage(q, page, prefs, simple, paper, highlights, selected, playHere) }
     Column(
         Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 4.dp).clip(RoundedCornerShape(18.dp)).background(paper.bg)
             .border(1.dp, paper.accent.copy(alpha = .35f), RoundedCornerShape(18.dp)).padding(horizontal = 12.dp, vertical = 8.dp),
@@ -272,9 +286,12 @@ private fun MushafPage(q: Quran, page: Int, prefs: ReaderPrefs, simple: Array<St
                                 val top = l.getLineTop(line); val bottom = l.getLineBottom(line); val lh = bottom - top
                                 val t0 = top + lh * .14f; val b0 = bottom - lh * .10f
                                 val r = CornerRadius(lh * .22f, lh * .22f)
-                                val fill = h.color.copy(alpha = if (h.selected) (if (paper.dark) .16f else .20f) else (if (paper.dark) .17f else .24f))
+                                val fill = h.color.copy(alpha = when { h.playing -> if (paper.dark) .20f else .16f; h.selected -> if (paper.dark) .16f else .20f; else -> if (paper.dark) .17f else .24f })
                                 drawRoundRect(fill, Offset(left.coerceAtLeast(0f), t0), Size((right - left).coerceAtMost(size.width), b0 - t0), r)
-                                drawRoundRect(h.color.copy(alpha = if (h.selected) .75f else .45f), Offset(left.coerceAtLeast(0f), t0), Size((right - left).coerceAtMost(size.width), b0 - t0), r, style = Stroke(width = if (h.selected) 2.4f else 1.4f))
+                                drawRoundRect(
+                                    h.color.copy(alpha = when { h.playing -> .9f; h.selected -> .75f; else -> .45f }), Offset(left.coerceAtLeast(0f), t0), Size((right - left).coerceAtMost(size.width), b0 - t0), r,
+                                    style = Stroke(width = when { h.playing -> 2.8f; h.selected -> 2.4f; else -> 1.4f }),
+                                )
                             }
                         }
                         for (h in pt.headers) {
