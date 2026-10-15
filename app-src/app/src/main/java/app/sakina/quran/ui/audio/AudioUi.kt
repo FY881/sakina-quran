@@ -244,7 +244,7 @@ fun PlayerScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                         Text(reciterName(st, ar), style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         VSpace(4.dp)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            val (bg, fg) = app.sakina.quran.ui.theme.badgeColors(look.cta, look.card)
+                            val (bg, fg) = app.sakina.quran.ui.theme.badgeColors(look.cta, look.card, dark = look.dark)
                             Badge(if (st.mode == AudioMode.AYAH) t("آية بآية", "Ayah by ayah") else t("السورة كاملة", "Whole surah"), bg, fg)
                             if (st.mode == AudioMode.AYAH || st.timing) Badge(t("تظليل متزامن", "Synced highlight"), bg, fg)
                             Badge(if (st.local) t("من الجهاز", "On device") else t("بثّ", "Streaming"), bg, fg)
