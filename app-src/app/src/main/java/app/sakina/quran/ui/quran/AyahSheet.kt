@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
@@ -38,7 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.sakina.quran.azkar.DhikrAudio
+import app.sakina.quran.audio.Recitation
 import app.sakina.quran.data.QuranUser
 import app.sakina.quran.quran.Editions
 import app.sakina.quran.quran.Quran
@@ -88,11 +89,12 @@ fun AyahSheet(q: Quran, s: Int, a: Int, onDismiss: () -> Unit, onOpen: (String) 
     val tafState = rememberEditionState(prefs.tafsir, tafRetry)
     val tafsir = (tafState as? EdState.Ready)?.data
     val trIds = prefs.activeTranslations(ar).filter { Editions.available(ctx, it) }
-    var playing by remember { mutableStateOf(DhikrAudio.playingUrl == Reciters.ayahUrl(prefs.ayahVoice, g)) }
+    // AU1: recitation runs through the media service (notification, lock screen, background), not a preview clip.
+    val audio = app.sakina.quran.ui.audio.rememberAudio()
+    val playingHere = audio.active && audio.sura == s && audio.ayah == a
     var editNote by remember { mutableStateOf(false) }
     var showCollections by remember { mutableStateOf(false) }
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    DisposableEffect(Unit) { onDispose { if (playing) DhikrAudio.stop() } }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = look.bgTop, contentColor = look.onCard) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(.9f).verticalScroll(rememberScrollState()).padding(horizontal = 18.dp).padding(bottom = 28.dp)) {
             Text(
@@ -110,9 +112,13 @@ fun AyahSheet(q: Quran, s: Int, a: Int, onDismiss: () -> Unit, onOpen: (String) 
             VSpace(8.dp)
             // Actions
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                Action(if (playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, if (playing) t("إيقاف", "Stop") else t("استماع", "Listen"), look.cta) {
-                    DhikrAudio.toggle(Reciters.ayahUrl(prefs.ayahVoice, g)) { playing = it }
-                    playing = DhikrAudio.playingUrl != null
+                Action(Icons.Outlined.PlayArrow, t("استمع من هنا", "Listen from here"), look.cta) {
+                    Recitation.listenFrom(ctx, q, prefs.ayahVoice, prefs.reciter, prefs.moshaf, s, a, ar)
+                    onDismiss()
+                }
+                Action(Icons.Outlined.Headphones, t("هذه الآية فقط", "This ayah only"), look.cta) {
+                    Recitation.listenFrom(ctx, q, prefs.ayahVoice, prefs.reciter, prefs.moshaf, s, a, ar, onlyThis = true)
+                    onDismiss()
                 }
                 Action(Icons.AutoMirrored.Outlined.MenuBook, t("التفسير", "Tafsir")) { onOpen("tafsir/$s/$a") }
                 if (onBookmark != null) Action(if (bookmarked == true) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder, t("علامة", "Bookmark"), if (bookmarked == true) look.cta else look.onCard) { onBookmark() }
@@ -126,7 +132,7 @@ fun AyahSheet(q: Quran, s: Int, a: Int, onDismiss: () -> Unit, onOpen: (String) 
                 Action(Icons.Outlined.Info, t("عن السورة", "Surah info")) { onOpen("surah_info/$s") }
                 Action(Icons.AutoMirrored.Outlined.ViewList, t("عرض الآيات", "Verse view")) { onOpen("reader/$s/$a") }
             }
-            if (playing) Muted(t("تلاوة: ", "Reciter: ") + (Reciters.AYAH_VOICES.firstOrNull { it.first == prefs.ayahVoice }?.let { if (ar) it.second else it.third } ?: prefs.ayahVoice) + t(" — بثّ من Islamic Network", " — streamed from Islamic Network"))
+            if (playingHere) Muted(t("تُتلى الآن بصوت ", "Now reciting: ") + (if (ar) audio.reciterAr else audio.reciterEn.ifBlank { audio.reciterAr }))
             VSpace(8.dp)
             // Highlight colours (QR09)
             Muted(t("تظليل بلون", "Highlight"))
