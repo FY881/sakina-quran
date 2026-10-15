@@ -98,6 +98,25 @@ fun ReaderPrefs.activeTranslations(arabicUi: Boolean): List<String> = translatio
 
 /** The five highlight colours (QR09). */
 val HL_COLORS = listOf(Color(0xFFFFD54F), Color(0xFF81C784), Color(0xFF64B5F6), Color(0xFFF48FB1), Color(0xFFFFB74D))
+/** AU1: the ayah being recited now — violet, distinct from the five highlight colours, readable on light, dark, paper and night themes. */
+fun playingColor(dark: Boolean) = if (dark) Color(0xFFC6A8FF) else Color(0xFF6A3BD2)
+
+/** Global index of the ayah being recited now (from [app.sakina.quran.audio.AudioBus]), or null (nothing playing / surah intro). */
+@Composable
+fun rememberPlayingAyah(q: Quran?): Int? {
+    val st = app.sakina.quran.ui.audio.rememberAudio()
+    if (q == null || !st.active || st.sura !in 1..114 || st.ayah <= 0) return null
+    return runCatching { q.global(st.sura, st.ayah.coerceAtMost(q.suras[st.sura - 1].ayas)) }.getOrNull()
+}
+
+/** AU1 "follow the recitation" preference (page auto-turn in the mushaf, auto-scroll in the reader). */
+@Composable
+fun rememberAudioFollow(): Boolean {
+    val ctx = LocalContext.current
+    LaunchedEffect(Unit) { app.sakina.quran.audio.AudioPrefs.load(ctx) }
+    return app.sakina.quran.audio.AudioPrefs.p.collectAsStateWithLifecycle().value.follow
+}
+
 val HL_DEFAULT_AR = listOf("مفضلة", "رجاء ورحمة", "تدبّر", "دعاء", "للحفظ")
 val HL_DEFAULT_EN = listOf("Favourite", "Hope & mercy", "Reflect", "Dua", "To memorise")
 fun legendLabel(p: ReaderPrefs, i: Int, ar: Boolean) = p.legend.getOrNull(i)?.takeIf { it.isNotBlank() } ?: if (ar) HL_DEFAULT_AR[i] else HL_DEFAULT_EN[i]
