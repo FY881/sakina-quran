@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
@@ -101,14 +104,18 @@ enum class Tab(val route: String, val ar: String, val en: String, val icon: Imag
 private val KNOWN_ROUTES = Tab.entries.map { it.route }.toSet() +
     setOf("settings", "city", "qibla", "more", "profile", "themes", "iconpacks", "tasbih", "names", "quran_search", "onboarding",
         "azkar", "hisn", "duas", "ruqyah", "istikhara", "names_quiz", "azkar_search", "azkar_mine",
-        "mushaf", "tafsir", "quran_library", "reciters", "khatma", "khatma_new", "tajweed", "topics", "quran_marks", "quran_stats", "share_ayah")
+        "mushaf", "tafsir", "quran_library", "reciters", "khatma", "khatma_new", "tajweed", "topics", "quran_marks", "quran_stats", "share_ayah",
+        "player")
 
 /** Route prefixes with path arguments that are navigated as-is. */
 private val PATH_ROUTES = listOf("reader/", "mushaf/", "tafsir/", "topic/", "surah_info/", "share/")
 
 /** Routes that hide the bottom bar (immersive / first-run). */
 private fun hidesBar(route: String?) = route == "onboarding" || route?.startsWith("reader/") == true || route?.startsWith("azkar/") == true ||
-    route == "mushaf" || route?.startsWith("mushaf/") == true
+    route == "mushaf" || route?.startsWith("mushaf/") == true || route == "player"
+
+/** AU1: the mini player rides above the bottom bar (or alone, on immersive screens) except on the full player and first run. */
+private fun hidesMini(route: String?) = route == "player" || route == "onboarding"
 
 @Composable
 fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String? = null, openRoute: String? = null, onOpened: () -> Unit = {}) {
@@ -162,6 +169,12 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
             snackbarHost = { SnackbarHost(snack) },
             contentColor = MaterialTheme.colorScheme.onBackground,
             bottomBar = {
+                // Mini player + nav bar share the bottom slot, so the Scaffold pads content by their combined height.
+                androidx.compose.foundation.layout.Column {
+                if (!hidesMini(current)) app.sakina.quran.ui.audio.MiniPlayer(
+                    onOpen = ::go,
+                    modifier = if (hidesBar(current)) Modifier.navigationBarsPadding() else Modifier,
+                )
                 if (!hidesBar(current)) NavigationBar(containerColor = look.bgBottom, tonalElevation = 0.dp) {
                     Tab.entries.forEach { tb ->
                         val sel = current == tb.route
@@ -180,10 +193,13 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
                         )
                     }
                 }
+                }
             },
         ) { pad ->
             CompositionLocalProvider(LocalSoon provides soon, app.sakina.quran.ui.quran.LocalQStore provides qstore) {
-            NavHost(nav, startDestination = startDest, modifier = Modifier.padding(bottom = pad.calculateBottomPadding())) {
+            // Consume what the bottom slot already covers (nav bar inset / mini player) so inner navigationBarsPadding doesn't double it.
+            val bottomPad = PaddingValues(bottom = pad.calculateBottomPadding())
+            NavHost(nav, startDestination = startDest, modifier = Modifier.padding(bottomPad).consumeWindowInsets(bottomPad)) {
                 composable(Tab.HOME.route) {
                     HomeScreen(
                         prefs = prefs, user = userData, onOpen = ::go,
@@ -307,6 +323,7 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
                     val aa = e.arguments?.getString("ayah")?.toIntOrNull()?.coerceAtLeast(1) ?: 1
                     app.sakina.quran.ui.quran.TafsirScreen(ss, aa, onBack = { nav.popBackStack() }, onOpen = ::go)
                 }
+                composable("player") { app.sakina.quran.ui.audio.PlayerScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
                 composable("quran_library") { app.sakina.quran.ui.quran.QuranLibraryScreen(onBack = { nav.popBackStack() }) }
                 composable("reciters") { app.sakina.quran.ui.quran.RecitersScreen(onBack = { nav.popBackStack() }) }
                 composable("khatma") { app.sakina.quran.ui.quran.KhatmaScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
