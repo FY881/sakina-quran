@@ -51,47 +51,91 @@ import app.sakina.quran.ui.tabs.normalize
 import app.sakina.quran.ui.theme.LocalSakina
 import app.sakina.quran.ui.theme.QuranFont
 import kotlinx.coroutines.launch
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-/** Reciter selection groundwork (AU1 prep): mp3quran catalogue (243 reciters) for full surahs + ayah-by-ayah voice. */
+/** Reciters (AU1): listening mode (ayah voices vs whole-surah moshaf), style/riwaya + timing badges, safe previews, downloads shortcut. */
 @Composable
-fun RecitersScreen(onBack: () -> Unit) {
+fun RecitersScreen(onBack: () -> Unit, onOpen: (String) -> Unit = {}) {
     val ctx = LocalContext.current
     val ar = isArabic()
     val look = LocalSakina.current.look
     val qu = rememberQUser()
     val store = LocalQStore.current
     val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) { app.sakina.quran.audio.AudioPrefs.load(ctx) }
+    val ap by app.sakina.quran.audio.AudioPrefs.p.collectAsStateWithLifecycle()
+    val surahMode = ap.mode == app.sakina.quran.audio.AudioMode.SURAH
     val all by produceState<List<Reciter>>(emptyList()) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { Reciters.load(ctx) }.getOrDefault(emptyList()) } }
+    val timed by produceState<Map<Int, Int>>(emptyMap()) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { app.sakina.quran.audio.Timings.reads(ctx) } }
     var q by remember { mutableStateOf("") }
     var playing by remember { mutableStateOf<String?>(DhikrAudio.playingUrl) }
-    var tab by remember { mutableIntStateOf(0) }
     DisposableEffect(Unit) { onDispose { DhikrAudio.stop() } }
+    // One preview at a time: pause the main recitation first; DhikrAudio.toggle stops any other clip (dhikr or preview) before starting.
+    val preview: (String) -> Unit = { url ->
+        if (DhikrAudio.playingUrl != url) app.sakina.quran.audio.Recitation.pause(ctx)
+        DhikrAudio.toggle(url) { on -> playing = if (on) url else if (playing == url) null else playing }
+        playing = DhikrAudio.playingUrl
+    }
+    val (bg, fg) = app.sakina.quran.ui.theme.badgeColors(look.cta, look.card, dark = look.dark)
+    @Composable fun styleLabel(s: app.sakina.quran.audio.AyahVoice.Style) = when (s) {
+        app.sakina.quran.audio.AyahVoice.Style.MURATTAL -> t("مرتّل", "Murattal")
+        app.sakina.quran.audio.AyahVoice.Style.MUJAWWAD -> t("مجوّد", "Mujawwad")
+        app.sakina.quran.audio.AyahVoice.Style.MUALLIM -> t("معلّم", "Teaching")
+    }
     val list = remember(all, q) {
         val n = normalize(q.trim())
         if (n.isEmpty()) all else all.filter { normalize(it.ar).contains(n) || it.en.lowercase().contains(q.trim().lowercase()) }
     }
     LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { BackHeader(t("القرّاء", "Reciters"), onBack, subtitle = t("${num(all.size, true)} قارئًا من mp3quran.net — بثّ مباشر", "${all.size} reciters from mp3quran.net — streamed")) }
+        item { BackHeader(t("القرّاء", "Reciters"), onBack, subtitle = t("${num(all.size, true)} قارئًا من mp3quran.net و${num(app.sakina.quran.audio.AyahVoices.ALL.size, true)} صوتًا آية بآية", "${all.size} reciters from mp3quran.net and ${app.sakina.quran.audio.AyahVoices.ALL.size} ayah-by-ayah voices")) }
+        item { SectionHeader(t("طريقة الاستماع", "Listening mode")) }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Chip(t("السور كاملة", "Full surahs"), selected = tab == 0, onClick = { tab = 0 })
-                Chip(t("آية بآية", "Ayah by ayah"), selected = tab == 1, onClick = { tab = 1 })
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf(
+                    Triple(app.sakina.quran.audio.AudioMode.AYAH, t("آية بآية", "Ayah by ayah"), t("تظليل دقيق وتكرار لكل آية", "Exact highlight, per-ayah repeat")),
+                    Triple(app.sakina.quran.audio.AudioMode.SURAH, t("السورة كاملة", "Whole surah"), t("مصاحف كاملة بروايات متعددة", "Full moshafs, many riwayat")),
+                ).forEach { (m, title, sub) ->
+                    val on = ap.mode == m
+                    SCard(Modifier.weight(1f), padding = PaddingValues(12.dp), tint = if (on) androidx.compose.ui.graphics.lerp(look.card, look.cta, .14f) else null,
+                        onClick = { app.sakina.quran.audio.AudioPrefs.update(ctx) { it.copy(mode = m) } }) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                            if (on) Icon(Icons.Outlined.CheckCircle, t("الوضع المختار", "Selected mode"), tint = look.cta, modifier = Modifier.size(20.dp))
+                        }
+                        Muted(sub)
+                    }
+                }
             }
         }
-        if (tab == 1) {
-            item { Muted(t("هذا الصوت يُستخدم عند الضغط على «استماع» في أي آية.", "This voice plays when you tap Listen on any ayah.")) }
-            items(Reciters.AYAH_VOICES, key = { it.first }) { (id, nAr, nEn) ->
-                val url = Reciters.ayahUrl(id, 0)
-                SCard(padding = PaddingValues(12.dp), onClick = { scope.launch { store.updatePrefs { it.copy(ayahVoice = id) } } }) {
+        item {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Muted(if (surahMode) t("اختر مصحفًا؛ يُشغَّل عند «استماع» في أي آية.", "Pick a moshaf; it plays when you tap Listen on any ayah.")
+                      else t("هذا الصوت يُستخدم عند الضغط على «استماع» في أي آية.", "This voice plays when you tap Listen on any ayah."), Modifier.weight(1f))
+                Spacer(Modifier.width(8.dp))
+                app.sakina.quran.ui.kit.GhostPill(t("التحميلات", "Downloads")) { onOpen("downloads") }
+            }
+        }
+        if (!surahMode) {
+            items(app.sakina.quran.audio.AyahVoices.ALL, key = { it.id }) { v ->
+                val url = v.url(0, ap.dataSaver)
+                val sel = qu.prefs.ayahVoice == v.id
+                SCard(padding = PaddingValues(12.dp), tint = if (sel) androidx.compose.ui.graphics.lerp(look.card, look.cta, .14f) else null,
+                    onClick = { scope.launch { store.updatePrefs { it.copy(ayahVoice = v.id) } } }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { DhikrAudio.toggle(url) { on -> playing = if (on) url else null }; playing = DhikrAudio.playingUrl }) {
+                        IconButton(onClick = { preview(url) }) {
                             Icon(if (playing == url) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, t("تجربة", "Preview"), tint = look.cta)
                         }
                         Column(Modifier.weight(1f)) {
-                            Text(if (ar) nAr else nEn, style = MaterialTheme.typography.titleSmall)
+                            Text(if (ar) v.ar else v.en, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            VSpace(4.dp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                app.sakina.quran.ui.kit.Badge(styleLabel(v.style), bg, fg)
+                                app.sakina.quran.ui.kit.Badge(t("تظليل متزامن", "Synced highlight"), bg, fg)
+                                app.sakina.quran.ui.kit.Badge(t("${num(if (ap.dataSaver) v.low else v.bitrate, true)} ك.ب/ث", "${if (ap.dataSaver) v.low else v.bitrate} kbps"), bg, fg)
+                            }
                             Muted(t("Islamic Network — للاستخدام غير التجاري", "Islamic Network — non-commercial use"))
                         }
-                        if (qu.prefs.ayahVoice == id) Icon(Icons.Outlined.CheckCircle, null, tint = look.cta)
+                        if (sel) Icon(Icons.Outlined.CheckCircle, t("الصوت المختار", "Selected voice"), tint = look.cta)
                     }
                 }
             }
@@ -110,14 +154,21 @@ fun RecitersScreen(onBack: () -> Unit) {
                     }
                     r.moshafs.forEach { m ->
                         val url = m.url(if (m.has(1)) 1 else m.surahs.minOrNull() ?: 1)
+                        val tn = timed[m.id]
                         Row(Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(12.dp)).press {
                             scope.launch { store.updatePrefs { it.copy(reciter = r.id, moshaf = m.id) } }
                         }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { DhikrAudio.toggle(url) { on -> playing = if (on) url else null }; playing = DhikrAudio.playingUrl }) {
+                            IconButton(onClick = { preview(url) }) {
                                 Icon(if (playing == url) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, t("تجربة", "Preview"), tint = look.cta)
                             }
                             Column(Modifier.weight(1f)) {
-                                Text(if (ar) m.ar else m.en.ifBlank { m.ar }, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+                                Text(app.sakina.quran.audio.moshafRiwaya(m.ar).let { rw -> if (ar || m.en.isBlank()) rw.ifBlank { m.ar } else m.en }, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+                                VSpace(4.dp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    app.sakina.quran.ui.kit.Badge(styleLabel(app.sakina.quran.audio.moshafStyle(m.ar, m.en)), bg, fg)
+                                    if (tn != null) app.sakina.quran.ui.kit.Badge(t("تظليل متزامن · ${num(tn, true)} سورة", "Synced · $tn surahs"), bg, fg, dot = look.cta)
+                                    else app.sakina.quran.ui.kit.Badge(t("بلا توقيت آيات", "No ayah timing"), bg, fg)
+                                }
                                 Muted(t("${num(m.count, true)} سورة", "${m.count} surahs"))
                             }
                             if (sel && qu.prefs.moshaf == m.id) Text(t("مختار", "Selected"), color = look.cta, style = MaterialTheme.typography.labelMedium)
@@ -125,7 +176,7 @@ fun RecitersScreen(onBack: () -> Unit) {
                     }
                 }
             }
-            item { Muted(t("القائمة والروابط من mp3quran.net التي تسمح بنسخ محتواها واستخدام روابطها. الاستماع الكامل مع التحميل وتظليل الآيات في التحديث القادم.", "Catalogue and links from mp3quran.net, which allows copying its material and using its links. Full player with downloads and ayah highlighting comes in the next update."), Modifier.padding(8.dp)) }
+            item { Muted(t("القائمة والروابط من mp3quran.net التي تسمح بنسخ محتواها واستخدام روابطها. التظليل المتزامن متاح للمصاحف التي تنشر توقيت الآيات.", "Catalogue and links from mp3quran.net, which allows copying its material and using its links. Synced highlight is available for moshafs that publish ayah timings."), Modifier.padding(8.dp)) }
         }
     }
 }
