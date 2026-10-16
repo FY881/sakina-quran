@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
     private var openRoute by mutableStateOf<String?>(null)
 
     private fun routeFrom(i: Intent?): String? = i?.getStringExtra("open")?.takeIf { r ->
-        r.startsWith("azkar/") || r in setOf("azkar", "tasbih", "prayers", "quran", "duas", "ruqyah", "khatma", "mushaf", "player")
+        r.startsWith("azkar/") || r in setOf("azkar", "tasbih", "prayers", "quran", "duas", "ruqyah", "khatma", "mushaf", "player", "downloads")
     }
 
     override fun onNewIntent(intent: Intent) {
