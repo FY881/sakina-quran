@@ -105,7 +105,7 @@ private val KNOWN_ROUTES = Tab.entries.map { it.route }.toSet() +
     setOf("settings", "city", "qibla", "more", "profile", "themes", "iconpacks", "tasbih", "names", "quran_search", "onboarding",
         "azkar", "hisn", "duas", "ruqyah", "istikhara", "names_quiz", "azkar_search", "azkar_mine",
         "mushaf", "tafsir", "quran_library", "reciters", "khatma", "khatma_new", "tajweed", "topics", "quran_marks", "quran_stats", "share_ayah",
-        "player")
+        "player", "downloads")
 
 /** Route prefixes with path arguments that are navigated as-is. */
 private val PATH_ROUTES = listOf("reader/", "mushaf/", "tafsir/", "topic/", "surah_info/", "share/")
@@ -325,6 +325,7 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
                 }
                 composable("player") { app.sakina.quran.ui.audio.PlayerScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
                 composable("quran_library") { app.sakina.quran.ui.quran.QuranLibraryScreen(onBack = { nav.popBackStack() }) }
+                composable("downloads") { app.sakina.quran.ui.audio.DownloadsScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
                 composable("reciters") { app.sakina.quran.ui.quran.RecitersScreen(onBack = { nav.popBackStack() }) }
                 composable("khatma") { app.sakina.quran.ui.quran.KhatmaScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
                 composable("khatma_new") { app.sakina.quran.ui.quran.KhatmaNewScreen(onBack = { nav.popBackStack() }, onDone = { nav.popBackStack() }) }
