@@ -82,6 +82,53 @@ launch $lang names $M;                         shot "${lang}_${m}_r09_names"
 launch $lang profile $M;                       shot "${lang}_${m}_r10_profile"
 launch $lang "onboarding?step=0" $M;           shot "${lang}_${m}_r11_onboarding"
 launch $lang "duas?tab=1" $M;                  shot "${lang}_${m}_r12_duas_refs"
+# ---- AU1 recitation audio (every step non-fatal so the shots above never break) ----
+au() { # lang route mode play
+  adb shell am force-stop $PKG || true
+  adb shell "am start -W -n $PKG/app.sakina.quran.MainActivity --es lang $1 --es route '$2' --es theme CLASSIC_TEAL --es mode $3 --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset 'tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto' --es play '$4'" || true
+  sleep 7
+}
+# Tap the first on-screen node whose text matches one of the given labels (exact).
+taptext() {
+  timeout 10 adb shell uiautomator dump /sdcard/t.xml >/dev/null 2>&1; adb pull /sdcard/t.xml /tmp/t.xml >/dev/null 2>&1
+  python3 - "$@" <<'PY'
+import re,subprocess,sys,html
+try: x=open('/tmp/t.xml',encoding='utf-8').read()
+except Exception: sys.exit(1)
+for t in sys.argv[1:]:
+  for m in re.finditer(r'<node [^>]*?text="([^"]*)"[^>]*?bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"',x):
+    if html.unescape(m.group(1)).strip()==t:
+      a,b,c,d=map(int,m.groups()[1:]); subprocess.call(['adb','shell','input','tap',str((a+c)//2),str((b+d)//2)]); print('TAPPED',t); sys.exit(0)
+print('NOT FOUND',sys.argv[1:]); sys.exit(1)
+PY
+}
+msess() { echo "=== $1 ($(date -u +%T))" >> shots/au1_media_session_${SET}.txt; adb shell dumpsys media_session 2>/dev/null | grep -iE "package=|state=PlaybackState|metadata|description=|active=" >> shots/au1_media_session_${SET}.txt || true; }
+A="au1_${SET}"
+{
+au $lang player $M "test:2:255";               shot "${A}_01_player_test"
+msess "test clip 2:255 (player)"
+adb shell cmd statusbar expand-notifications || true; sleep 3; snap "${A}_02_notification"
+adb shell cmd statusbar collapse || true; sleep 1
+if [ $lang = ar ]; then taptext "بدون تكرار"; else taptext "No repeat"; fi && { sleep 3; snap "${A}_03_sheet_repeat"; adb shell input keyevent BACK; sleep 2; }
+if [ $lang = ar ]; then taptext "مؤقّت النوم"; else taptext "Sleep timer"; fi && { sleep 3; snap "${A}_04_sheet_sleep"; adb shell input keyevent BACK; sleep 2; }
+taptext "١×" "1×" && { sleep 3; snap "${A}_05_sheet_speed"; adb shell input keyevent BACK; sleep 2; }
+au $lang quran $M "test:2:255";                shot "${A}_06_mini_quran_tab"
+au $lang "mushaf/42" $M "test:2:255";          shot "${A}_07_mushaf_playing"
+au $lang "reader/2/255" $M "test:2:255";       shot "${A}_08_reader_playing"
+au $lang downloads $M "";                      shot "${A}_09_downloads"
+au $lang reciters $M "";                       shot "${A}_10_reciters"
+au $lang player $M "ayah:2:255";               snap "${A}_11_stream_start"
+sleep 8;                                       snap "${A}_12_stream_8s"
+msess "real stream ayah:2:255 (+8s)"
+adb shell svc wifi disable || true; adb shell svc data disable || true; sleep 2
+au $lang player $M "ayah:3:1"; sleep 3;        snap "${A}_13_offline_error"
+msess "offline ayah:3:1"
+adb shell svc wifi enable || true; adb shell svc data enable || true
+adb shell am force-stop $PKG || true
+adb shell input keyevent HOME || true; sleep 3; snap "${A}_14_launcher_home"
+adb shell input swipe 540 1900 540 400 400 || true; sleep 3; snap "${A}_15_app_drawer"
+adb shell input keyevent HOME || true
+} || true
 crashdump
 mv shots/crash.txt shots/crash_${SET}.txt 2>/dev/null || true
 adb logcat -d | grep -i "sakina\|AndroidRuntime\|FATAL" | tail -300 > shots/logcat_${SET}.txt || true
