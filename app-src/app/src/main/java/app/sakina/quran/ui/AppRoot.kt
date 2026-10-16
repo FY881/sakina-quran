@@ -326,7 +326,7 @@ fun AppRoot(repo: SettingsRepo, user: UserRepo, prefs: Prefs, startRoute: String
                 composable("player") { app.sakina.quran.ui.audio.PlayerScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
                 composable("quran_library") { app.sakina.quran.ui.quran.QuranLibraryScreen(onBack = { nav.popBackStack() }) }
                 composable("downloads") { app.sakina.quran.ui.audio.DownloadsScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
-                composable("reciters") { app.sakina.quran.ui.quran.RecitersScreen(onBack = { nav.popBackStack() }) }
+                composable("reciters") { app.sakina.quran.ui.quran.RecitersScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
                 composable("khatma") { app.sakina.quran.ui.quran.KhatmaScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
                 composable("khatma_new") { app.sakina.quran.ui.quran.KhatmaNewScreen(onBack = { nav.popBackStack() }, onDone = { nav.popBackStack() }) }
                 composable("quran_stats") { app.sakina.quran.ui.quran.QuranStatsScreen(onBack = { nav.popBackStack() }, onOpen = ::go) }
