@@ -21,7 +21,7 @@ object DebugSeed {
                 inlineTafsir = kv["tafsir"]?.let { it == "1" } ?: p.inlineTafsir,
                 script = kv["script"]?.toIntOrNull() ?: p.script,
                 palette = kv["palette"]?.toIntOrNull() ?: p.palette,
-                translations = kv["tr"]?.let { v -> if (v == "auto") null else v.split('|').filter { it.isNotBlank() } } ?: p.translations,
+                translations = when (val v = kv["tr"]) { null -> p.translations; "auto" -> null; else -> v.split('|').filter { it.isNotBlank() } },
             )
         }
     }
