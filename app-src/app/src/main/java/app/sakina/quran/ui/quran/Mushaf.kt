@@ -158,13 +158,29 @@ fun MushafScreen(startPage: Int, khatmaId: String?, onBack: () -> Unit, onOpen: 
     // AU1: the ayah being recited is highlighted; with "follow" on, the page turns with the recitation.
     val playingG = rememberPlayingAyah(quran)
     val follow = rememberAudioFollow()
-    LaunchedEffect(playingG, follow) {
+    // Follow runs as a small loop (not only on change), so it also catches the ayah already playing when the
+    // screen opens mid-session and retries once the pager has laid out. A user swipe pauses follow until the
+    // recitation moves on to the next ayah.
+    val curPlaying by rememberUpdatedState(playingG)
+    val curFollow by rememberUpdatedState(follow)
+    var userHold by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(pager) {
+        pager.interactionSource.interactions.collect { if (it is androidx.compose.foundation.interaction.DragInteraction.Start) userHold = curPlaying ?: -1 }
+    }
+    LaunchedEffect(quran) {
         val q = quran ?: return@LaunchedEffect
-        val g = playingG ?: return@LaunchedEffect
-        if (!follow) return@LaunchedEffect
-        val (ps, pa) = q.fromGlobal(g)
-        val target = q.page(ps, pa).coerceIn(1, 604) - 1
-        if (target != pager.currentPage && !pager.isScrollInProgress) runCatching { pager.animateScrollToPage(target) }
+        var first = true
+        while (true) {
+            val g = curPlaying
+            if (g != null && userHold != null && userHold != g) userHold = null
+            if (g != null && curFollow && userHold == null && !pager.isScrollInProgress) {
+                val (ps, pa) = q.fromGlobal(g)
+                val target = q.page(ps, pa).coerceIn(1, 604) - 1
+                if (target != pager.currentPage) runCatching { if (first) pager.scrollToPage(target) else pager.animateScrollToPage(target) }
+                first = false
+            }
+            kotlinx.coroutines.delay(350)
+        }
     }
     LaunchedEffect(pager.settledPage, quran) {
         val p = pager.settledPage + 1
@@ -272,7 +288,7 @@ private fun MushafPage(q: Quran, page: Int, prefs: ReaderPrefs, simple: Array<St
                         // Highlights: one rounded pill per line the ayah covers, inset inside the line box so
                         // neighbouring lines never touch; soft fill + thin edge keeps tajweed colours readable.
                         val n = l.layoutInput.text.length
-                        for (h in pt.hls) {
+                        for (h in pt.hls.sortedBy { if (it.playing) 1 else 0 }) {
                             if (h.start >= n) continue
                             val e = h.end.coerceAtMost(n)
                             val first = l.getLineForOffset(h.start); val last = l.getLineForOffset((e - 1).coerceAtLeast(h.start))
@@ -282,15 +298,16 @@ private fun MushafPage(q: Quran, page: Int, prefs: ReaderPrefs, simple: Array<St
                                 if (b <= a) continue
                                 val xa = if (a == ls) l.getLineRight(line) else l.getHorizontalPosition(a, usePrimaryDirection = true)
                                 val xb = if (b >= le) l.getLineLeft(line) else l.getHorizontalPosition(b, usePrimaryDirection = true)
-                                val left = minOf(xa, xb) - 6f; val right = maxOf(xa, xb) + 6f
+                                val pad = if (h.playing) 4f else 1f
+                                val left = minOf(xa, xb) - pad; val right = maxOf(xa, xb) + pad
                                 val top = l.getLineTop(line); val bottom = l.getLineBottom(line); val lh = bottom - top
-                                val t0 = top + lh * .14f; val b0 = bottom - lh * .10f
+                                val t0 = top + lh * (if (h.playing) .10f else .16f); val b0 = bottom - lh * (if (h.playing) .06f else .12f)
                                 val r = CornerRadius(lh * .22f, lh * .22f)
-                                val fill = h.color.copy(alpha = when { h.playing -> if (paper.dark) .20f else .16f; h.selected -> if (paper.dark) .16f else .20f; else -> if (paper.dark) .17f else .24f })
+                                val fill = h.color.copy(alpha = when { h.playing -> if (paper.dark) .38f else .28f; h.selected -> if (paper.dark) .16f else .20f; else -> if (paper.dark) .14f else .20f })
                                 drawRoundRect(fill, Offset(left.coerceAtLeast(0f), t0), Size((right - left).coerceAtMost(size.width), b0 - t0), r)
                                 drawRoundRect(
-                                    h.color.copy(alpha = when { h.playing -> .9f; h.selected -> .75f; else -> .45f }), Offset(left.coerceAtLeast(0f), t0), Size((right - left).coerceAtMost(size.width), b0 - t0), r,
-                                    style = Stroke(width = when { h.playing -> 2.8f; h.selected -> 2.4f; else -> 1.4f }),
+                                    h.color.copy(alpha = when { h.playing -> 1f; h.selected -> .75f; else -> .40f }), Offset(left.coerceAtLeast(0f), t0), Size((right - left).coerceAtMost(size.width), b0 - t0), r,
+                                    style = Stroke(width = when { h.playing -> 5f; h.selected -> 2.4f; else -> 1.2f }),
                                 )
                             }
                         }
