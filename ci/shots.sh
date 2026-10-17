@@ -85,7 +85,7 @@ launch $lang "duas?tab=1" $M;                  shot "${lang}_${m}_r12_duas_refs"
 # ---- AU1 recitation audio (every step non-fatal so the shots above never break) ----
 au() { # lang route mode play
   adb shell am force-stop $PKG || true
-  adb shell "am start -W -n $PKG/app.sakina.quran.MainActivity --es lang $1 --es route '$2' --es theme CLASSIC_TEAL --es mode $3 --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset 'tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto' --es play '$4'" || true
+  adb shell "am start -W -n $PKG/app.sakina.quran.MainActivity --es lang $1 --es route '$2' --es theme CLASSIC_TEAL --es mode $3 --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset 'tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto' --es afollow 1 --es play '$4'" || true
   sleep 7
 }
 # Tap the first on-screen node whose text matches one of the given labels (exact).
@@ -109,14 +109,25 @@ au $lang player $M "test:2:255";               shot "${A}_01_player_test"
 msess "test clip 2:255 (player)"
 adb shell cmd statusbar expand-notifications || true; sleep 3; snap "${A}_02_notification"
 adb shell cmd statusbar collapse || true; sleep 1
-if [ $lang = ar ]; then taptext "بدون تكرار"; else taptext "No repeat"; fi && { sleep 3; snap "${A}_03_sheet_repeat"; adb shell input keyevent BACK; sleep 2; }
-if [ $lang = ar ]; then taptext "مؤقّت النوم"; else taptext "Sleep timer"; fi && { sleep 3; snap "${A}_04_sheet_sleep"; adb shell input keyevent BACK; sleep 2; }
-taptext "١×" "1×" && { sleep 3; snap "${A}_05_sheet_speed"; adb shell input keyevent BACK; sleep 2; }
+# Each sheet: re-dump and re-find its chip (labels from AudioUi.kt), wait for the sheet, close it, then confirm it closed.
+closesheet() { adb shell input keyevent BACK; sleep 3; }
+sheetshot() { # name label...
+  local n=$1; shift
+  for try in 1 2 3; do
+    if taptext "$@"; then sleep 4; snap "$n"; closesheet; return 0; fi
+    sleep 2
+  done
+  echo "SHEET MISSING $n"; return 1
+}
+sleep 2
+if [ $lang = ar ]; then sheetshot "${A}_03_sheet_repeat" "بدون تكرار"; else sheetshot "${A}_03_sheet_repeat" "No repeat"; fi
+if [ $lang = ar ]; then sheetshot "${A}_04_sheet_sleep" "مؤقّت النوم"; else sheetshot "${A}_04_sheet_sleep" "Sleep timer"; fi
+if [ $lang = ar ]; then sheetshot "${A}_05_sheet_speed" "×١" "×١٫٠"; else sheetshot "${A}_05_sheet_speed" "1×" "1.0×"; fi
 au $lang quran $M "test:2:255";                shot "${A}_06_mini_quran_tab"
 au $lang "mushaf/42" $M "test:2:255";          shot "${A}_07_mushaf_playing"
 au $lang "reader/2/255" $M "test:2:255";       shot "${A}_08_reader_playing"
-au $lang downloads $M "";                      shot "${A}_09_downloads"
-au $lang reciters $M "";                       shot "${A}_10_reciters"
+au $lang downloads $M "test:2:255";            shot "${A}_09_downloads"
+au $lang reciters $M "test:2:255";             shot "${A}_10_reciters"
 au $lang player $M "ayah:2:255";               snap "${A}_11_stream_start"
 sleep 8;                                       snap "${A}_12_stream_8s"
 msess "real stream ayah:2:255 (+8s)"
@@ -125,7 +136,10 @@ au $lang player $M "ayah:3:1"; sleep 3;        snap "${A}_13_offline_error"
 msess "offline ayah:3:1"
 adb shell svc wifi enable || true; adb shell svc data enable || true
 adb shell am force-stop $PKG || true
-adb shell input keyevent HOME || true; sleep 3; snap "${A}_14_launcher_home"
+adb shell input keyevent HOME || true; sleep 2
+adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME || true; sleep 4
+adb shell screencap -p /sdcard/home.png && adb pull /sdcard/home.png "shots/${A}_14_launcher_home.png" || true
+[ -s "shots/${A}_14_launcher_home.png" ] || { sleep 3; adb exec-out screencap -p > "shots/${A}_14_launcher_home.png"; }
 adb shell input swipe 540 1900 540 400 400 || true; sleep 3; snap "${A}_15_app_drawer"
 adb shell input keyevent HOME || true
 } || true
