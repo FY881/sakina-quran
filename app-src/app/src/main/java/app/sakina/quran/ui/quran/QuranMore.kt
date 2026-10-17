@@ -39,6 +39,7 @@ import app.sakina.quran.ui.common.t
 import app.sakina.quran.ui.icons.Ico
 import app.sakina.quran.ui.icons.PackIcon
 import app.sakina.quran.ui.kit.BackHeader
+import app.sakina.quran.ui.kit.bleedH
 import app.sakina.quran.ui.kit.Chip
 import app.sakina.quran.ui.kit.CtaPill
 import app.sakina.quran.ui.kit.Muted
@@ -87,7 +88,7 @@ fun RecitersScreen(onBack: () -> Unit, onOpen: (String) -> Unit = {}) {
         if (n.isEmpty()) all else all.filter { normalize(it.ar).contains(n) || it.en.lowercase().contains(q.trim().lowercase()) }
     }
     LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { BackHeader(t("القرّاء", "Reciters"), onBack, subtitle = t("${num(all.size, true)} قارئًا من mp3quran.net و${num(app.sakina.quran.audio.AyahVoices.ALL.size, true)} صوتًا آية بآية", "${all.size} reciters from mp3quran.net and ${app.sakina.quran.audio.AyahVoices.ALL.size} ayah-by-ayah voices")) }
+        item { BackHeader(t("القرّاء", "Reciters"), onBack, subtitle = t("${num(all.size, true)} قارئًا من mp3quran.net و${num(app.sakina.quran.audio.AyahVoices.ALL.size, true)} صوتًا آية بآية", "${all.size} reciters from mp3quran.net and ${app.sakina.quran.audio.AyahVoices.ALL.size} ayah-by-ayah voices"), modifier = Modifier.bleedH(16.dp)) }
         item { SectionHeader(t("طريقة الاستماع", "Listening mode")) }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -188,7 +189,7 @@ fun TopicsScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
     val ar = isArabic()
     val topics = remember { runCatching { Topics.load(ctx) }.getOrDefault(emptyList()) }
     LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { BackHeader(t("موضوعات القرآن", "Quran topics"), onBack, subtitle = t("${num(topics.size, true)} موضوعًا مختارًا بآياتها", "${topics.size} curated topics with their ayat")) }
+        item { BackHeader(t("موضوعات القرآن", "Quran topics"), onBack, subtitle = t("${num(topics.size, true)} موضوعًا مختارًا بآياتها", "${topics.size} curated topics with their ayat"), modifier = Modifier.bleedH(16.dp)) }
         items(topics, key = { it.id }) { tp ->
             SCard(padding = PaddingValues(14.dp), onClick = { onOpen("topic/${tp.id}") }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -214,7 +215,7 @@ fun TopicScreen(id: String, onBack: () -> Unit, onOpen: (String) -> Unit) {
     val trId = qu.prefs.activeTranslations(ar).firstOrNull { app.sakina.quran.quran.Editions.available(ctx, it) }
     val tr = rememberEdition(trId)
     LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { BackHeader(tp?.let { if (ar) it.ar else it.en } ?: "", onBack) }
+        item { BackHeader(tp?.let { if (ar) it.ar else it.en } ?: "", onBack, modifier = Modifier.bleedH(16.dp)) }
         if (quran == null || tp == null) return@LazyColumn
         items(tp.refs, key = { "${it.first}:${it.second}" }) { (s, a) ->
             SCard(padding = PaddingValues(14.dp), onClick = { onOpen("reader/$s/$a") }) {
@@ -236,7 +237,7 @@ fun SurahInfoScreen(sura: Int, onBack: () -> Unit, onOpen: (String) -> Unit) {
     val look = LocalSakina.current.look
     LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val s = quran?.suras?.getOrNull(sura - 1)
-        item { BackHeader(if (s == null) "" else if (ar) "سورة ${s.name}" else "${s.tname} — ${s.ename}", onBack) }
+        item { BackHeader(if (s == null) "" else if (ar) "سورة ${s.name}" else "${s.tname} — ${s.ename}", onBack, modifier = Modifier.bleedH(16.dp)) }
         if (quran == null || s == null) return@LazyColumn
         item {
             SCard(strong = true) {
@@ -301,7 +302,7 @@ fun QuranMarksScreen(startTab: Int, onBack: () -> Unit, onOpen: (String) -> Unit
     var editLegend by remember { mutableStateOf(false) }
     fun parse(r: String) = r.split(':').let { p -> p.getOrNull(0)?.toIntOrNull()?.let { s -> p.getOrNull(1)?.toIntOrNull()?.let { s to it } } }?.takeIf { it.first in 1..114 }
     LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { BackHeader(t("آياتي", "My ayat"), onBack, subtitle = t("المفضلة والمجموعات والتظليل والملاحظات", "Favourites, collections, highlights and notes")) }
+        item { BackHeader(t("آياتي", "My ayat"), onBack, subtitle = t("المفضلة والمجموعات والتظليل والملاحظات", "Favourites, collections, highlights and notes"), modifier = Modifier.bleedH(16.dp)) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Chip(t("المفضلة والمجموعات", "Collections"), selected = tab == 0, onClick = { tab = 0 })
@@ -398,7 +399,7 @@ fun TajweedGuideScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
         TajRule.MADD_PERMISSIBLE to (2 to 255), TajRule.SILENT to (2 to 255), TajRule.MADD_NATURAL to (2 to 2), TajRule.IKHFA_SHAFAWI to (2 to 8), TajRule.IDGHAM_SHAFAWI to (4 to 1),
     )
     LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { BackHeader(t("التجويد الملوّن", "Colour-coded tajweed"), onBack, subtitle = t("فعّل الألوان في المصحف وتعرّف على كل حكم", "Turn colours on in the mushaf and learn each rule")) }
+        item { BackHeader(t("التجويد الملوّن", "Colour-coded tajweed"), onBack, subtitle = t("فعّل الألوان في المصحف وتعرّف على كل حكم", "Turn colours on in the mushaf and learn each rule"), modifier = Modifier.bleedH(16.dp)) }
         item {
             SCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
