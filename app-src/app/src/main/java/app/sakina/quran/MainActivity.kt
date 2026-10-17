@@ -95,6 +95,8 @@ class MainActivity : AppCompatActivity() {
      * `ayah:2:255` (ayah-by-ayah stream with the chosen voice) or `surah:1:1` (whole-surah file of the chosen reciter, from that ayah).
      */
     private fun applyDebugPlay() {
+        // `--es afollow 1|0`: pin the "follow the recitation" preference so earlier shots can't leave it toggled.
+        intent?.getStringExtra("afollow")?.let { v -> runCatching { app.sakina.quran.audio.AudioPrefs.update(applicationContext) { it.copy(follow = v == "1") } } }
         val spec = intent?.getStringExtra("play")?.takeIf { it.isNotBlank() } ?: return
         if (debugPlayed) return // once per process: a language-switch recreation must not restart it
         val parts = spec.split(':')
