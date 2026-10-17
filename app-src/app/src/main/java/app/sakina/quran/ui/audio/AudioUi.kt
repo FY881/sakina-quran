@@ -1,5 +1,6 @@
 package app.sakina.quran.ui.audio
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
@@ -28,6 +30,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -36,6 +46,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -82,6 +93,42 @@ fun mmss(ms: Long, ar: Boolean): String {
     return digits(txt, ar)
 }
 
+/** Repeat count: "×٣" in Arabic, "×3" in English. */
+fun timesLabel(n: Int, ar: Boolean): String = "×" + num(n, ar)
+
+/** Speed multiplier: "×١٫٥" in Arabic (Arabic decimal separator), "1.5×" in English. */
+fun speedLabel(s: Float, ar: Boolean): String {
+    val v = fmtSpeed(s)
+    return if (ar) "×" + digits(v, true).replace('.', '\u066B') else "$v×"
+}
+
+/** Arabic count of minutes with the right plural: ٥ دقائق، ١٠ دقائق، ١٥ دقيقة. */
+fun minutesAr(m: Int): String = when {
+    m == 1 -> "دقيقة واحدة"
+    m == 2 -> "دقيقتان"
+    m in 3..10 -> "${num(m, true)} دقائق"
+    else -> "${num(m, true)} دقيقة"
+}
+
+/** Warning icon colour with ≥ 4.5:1 contrast on [bg] (the pale light-theme warn tone is never used as a foreground). */
+fun warnIconOn(bg: Color): Color =
+    app.sakina.quran.ui.theme.readableOn(if (bg.luminance() > .4f) Color(0xFFB3261E) else Color(0xFFFFB4AB), bg)
+
+/** Fades the top / bottom edge of a scrolling area when there is more content that way. */
+fun Modifier.fadeEdges(state: ScrollState, edge: Dp = 28.dp): Modifier =
+    this.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.drawWithContent {
+        drawContent()
+        val e = edge.toPx().coerceAtMost(size.height / 3f)
+        if (state.canScrollBackward) drawRect(
+            Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black, startY = 0f, endY = e),
+            size = Size(size.width, e), blendMode = BlendMode.DstIn,
+        )
+        if (state.canScrollForward) drawRect(
+            Brush.verticalGradient(0f to Color.Black, 1f to Color.Transparent, startY = size.height - e, endY = size.height),
+            topLeft = Offset(0f, size.height - e), size = Size(size.width, e), blendMode = BlendMode.DstIn,
+        )
+    }
+
 fun reciterName(st: AudioUiState, ar: Boolean) = if (ar) st.reciterAr else st.reciterEn.ifBlank { st.reciterAr }
 
 fun nowTitle(q: Quran?, st: AudioUiState, ar: Boolean): String {
@@ -121,13 +168,14 @@ fun MiniPlayer(onOpen: (String) -> Unit, modifier: Modifier = Modifier) {
             st.count > 0 -> (st.index + 1f) / st.count
             else -> 0f
         }
-        Box(Modifier.fillMaxWidth().height(3.dp).background(look.onCardMuted.copy(alpha = .18f))) {
-            Box(Modifier.fillMaxWidth(frac.coerceIn(0f, 1f)).height(3.dp).background(look.cta))
+        // Inset, rounded strip so it never runs into the card's rounded corners.
+        Box(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 6.dp).height(3.dp).clip(CircleShape).background(look.onCardMuted.copy(alpha = .18f))) {
+            Box(Modifier.fillMaxWidth(frac.coerceIn(0f, 1f)).height(3.dp).clip(CircleShape).background(look.cta))
         }
         Row(Modifier.fillMaxWidth().padding(start = 6.dp, end = 4.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
                 when {
-                    st.error != null -> IconButton(onClick = { Recitation.retry(ctx) }) { Icon(Icons.Outlined.ErrorOutline, t("إعادة المحاولة", "Retry"), tint = look.warn) }
+                    st.error != null -> IconButton(onClick = { Recitation.retry(ctx) }) { Icon(Icons.Outlined.ErrorOutline, t("إعادة المحاولة", "Retry"), tint = warnIconOn(look.card)) }
                     st.buffering -> CircularProgressIndicator(Modifier.size(24.dp), color = look.cta, strokeWidth = 2.5.dp)
                     else -> IconButton(onClick = { Recitation.toggle(ctx) }) {
                         Icon(if (st.playing || st.inGap) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, if (st.playing) t("إيقاف مؤقت", "Pause") else t("تشغيل", "Play"), tint = look.cta, modifier = Modifier.size(30.dp))
@@ -138,7 +186,7 @@ fun MiniPlayer(onOpen: (String) -> Unit, modifier: Modifier = Modifier) {
                 Text(nowTitle(q, st, ar), style = MaterialTheme.typography.titleSmall, color = look.onCard, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     if (st.error != null) t("تعذّر التشغيل — اضغط للتفاصيل", "Playback failed — tap for details") else reciterName(st, ar),
-                    style = MaterialTheme.typography.bodySmall, color = if (st.error != null) look.warn else look.onCardMuted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall, color = if (st.error != null) warnIconOn(look.card) else look.onCardMuted, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
             IconButton(onClick = { Recitation.stop(ctx) }) { Icon(Icons.Outlined.Close, t("إيقاف التلاوة", "Stop recitation"), tint = look.onCardMuted) }
@@ -183,11 +231,13 @@ fun ContinueListeningCard(q: Quran, onOpen: (String) -> Unit) {
     }
 }
 
+private fun t2(ar: Boolean, a: String, e: String) = if (ar) a else e
+
 private fun repeatLabel(r: RepeatSpec, ar: Boolean): String = when {
     r.isPlain -> if (ar) "بدون تكرار" else "No repeat"
     else -> buildList {
-        if (r.ayahTimes > 1) add(if (ar) "الآية ×${num(r.ayahTimes, true)}" else "Ayah ×${r.ayahTimes}")
-        if (r.infinite) add(if (ar) "المقطع ∞" else "Range ∞") else if (r.rangeTimes > 1) add(if (ar) "المقطع ×${num(r.rangeTimes, true)}" else "Range ×${r.rangeTimes}")
+        if (r.ayahTimes > 1) add(t2(ar, "الآية ", "Ayah ") + timesLabel(r.ayahTimes, ar))
+        if (r.infinite) add(if (ar) "المقطع ∞" else "Range ∞") else if (r.rangeTimes > 1) add(t2(ar, "المقطع ", "Range ") + timesLabel(r.rangeTimes, ar))
         if (r.gapMs > 0) add(if (ar) "توقف ${num((r.gapMs / 1000).toInt(), true)}ث" else "${r.gapMs / 1000}s gap")
         if (r.ladder) add(if (ar) "تدرّج" else "Ladder")
     }.joinToString(" • ")
@@ -207,7 +257,10 @@ private fun sleepLabel(st: AudioUiState, ar: Boolean): String {
     }
 }
 
-/** Full player (AU06–AU09): ayah text, progress, transport, repeat / sleep / speed sheets, follow-along. */
+/** Full player (AU06–AU09): ayah text, progress, transport, repeat / sleep / speed sheets, follow-along.
+ *  Layout (AU1 QA): header + reciter card on top, a bounded "now reciting" card that scrolls internally (fade edges,
+ *  back to the top on every new ayah), and a control dock below it that always fits above the navigation bar. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PlayerScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
     val st = rememberAudio()
@@ -218,136 +271,182 @@ fun PlayerScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
     LaunchedEffect(Unit) { AudioPrefs.load(ctx) }
     val prefs by AudioPrefs.p.collectAsStateWithLifecycle()
     var sheet by remember { mutableStateOf(0) } // 1 repeat, 2 sleep, 3 speed
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp).navigationBarsPadding()) {
+    Column(Modifier.fillMaxSize().navigationBarsPadding()) {
         BackHeader(t("مشغّل التلاوة", "Recitation player"), onBack, subtitle = if (st.active) (if (st.mode == AudioMode.AYAH) t("آية بآية", "Ayah by ayah") else t("السورة كاملة", "Whole surah")) else null) {
             IconButton(onClick = { onOpen("downloads") }) { Icon(Icons.Outlined.Download, t("التحميلات", "Downloads"), tint = MaterialTheme.colorScheme.onBackground) }
         }
         if (!st.active || q == null) {
-            SCard(Modifier.padding(16.dp)) {
-                Text(t("لا تُتلى سورة الآن", "Nothing is playing"), style = MaterialTheme.typography.titleMedium)
-                Muted(t("اختر سورة من المصحف أو اضغط «استمع من هنا» على أي آية.", "Open a surah in the mushaf or tap “Listen from here” on any ayah."))
-                VSpace(10.dp)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CtaPill(t("القرّاء", "Reciters")) { onOpen("reciters") }
-                    GhostPill(t("المصحف", "Mushaf")) { onOpen("mushaf") }
+            Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
+                SCard(Modifier.padding(16.dp)) {
+                    Text(t("لا تُتلى سورة الآن", "Nothing is playing"), style = MaterialTheme.typography.titleMedium)
+                    Muted(t("اختر سورة من المصحف أو اضغط «استمع من هنا» على أي آية.", "Open a surah in the mushaf or tap “Listen from here” on any ayah."))
+                    VSpace(10.dp)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CtaPill(t("القرّاء", "Reciters")) { onOpen("reciters") }
+                        GhostPill(t("المصحف", "Mushaf")) { onOpen("mushaf") }
+                    }
                 }
             }
             return@Column
         }
-        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Reciter card
-            SCard(padding = PaddingValues(14.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    PackIcon(Ico.RECITERS, 44.dp)
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(reciterName(st, ar), style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        VSpace(4.dp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            val (bg, fg) = app.sakina.quran.ui.theme.badgeColors(look.cta, look.card, dark = look.dark)
-                            Badge(if (st.mode == AudioMode.AYAH) t("آية بآية", "Ayah by ayah") else t("السورة كاملة", "Whole surah"), bg, fg)
-                            if (st.mode == AudioMode.AYAH || st.timing) Badge(t("تظليل متزامن", "Synced highlight"), bg, fg)
-                            Badge(if (st.local) t("من الجهاز", "On device") else t("بثّ", "Streaming"), bg, fg)
+        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+            val dockMax = maxHeight * 0.68f
+            Column(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Reciter card
+                SCard(padding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        PackIcon(Ico.RECITERS, 40.dp)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(reciterName(st, ar), style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            VSpace(4.dp)
+                            // FlowRow: no badge is ever cut ("Streamin") in long English labels.
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                val (bg, fg) = app.sakina.quran.ui.theme.badgeColors(look.cta, look.card, dark = look.dark)
+                                Badge(if (st.mode == AudioMode.AYAH) t("آية بآية", "Ayah by ayah") else t("السورة كاملة", "Whole surah"), bg, fg)
+                                if (st.mode == AudioMode.AYAH || st.timing) Badge(t("تظليل متزامن", "Synced highlight"), bg, fg)
+                                Badge(if (st.local) t("من الجهاز", "On device") else t("بثّ", "Streaming"), bg, fg)
+                            }
                         }
                     }
                 }
-            }
-            // Now reciting
-            SCard(strong = true) {
-                val su = q.suras.getOrNull(st.sura - 1)
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (su != null) "سورة ${su.name}" else "", fontFamily = QuranFont, fontSize = 30.sp, lineHeight = 52.sp, color = look.onCard)
-                    if (su != null) Muted(
-                        if (st.ayah > 0) t("الآية ${num(st.ayah, true)} من ${num(su.ayas, true)} • الصفحة ${num(q.page(st.sura, st.ayah), true)}", "Ayah ${st.ayah} of ${su.ayas} • Page ${q.page(st.sura, st.ayah)}")
-                        else t("الاستعاذة والبسملة", "Isti'adha & basmala"),
-                    )
-                    VSpace(10.dp)
-                    if (su != null && st.ayah > 0) RtlBox {
-                        Text(
-                            app.sakina.quran.quran.Tajweed.glueWaqf(q.displayAyah(st.sura, st.ayah)) + " " + app.sakina.quran.ui.quran.ayahMark(st.ayah),
-                            fontFamily = QuranFont, fontSize = 24.sp, lineHeight = 48.sp, color = look.onCard, textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp).verticalScroll(rememberScrollState()),
+                // Now reciting: takes the remaining height, scrolls inside (long ayat such as Ayat al-Kursi).
+                SCard(Modifier.weight(1f), strong = true, padding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) {
+                    val su = q.suras.getOrNull(st.sura - 1)
+                    val textScroll = rememberScrollState()
+                    LaunchedEffect(st.sura, st.ayah) { textScroll.scrollTo(0) }
+                    BoxWithConstraints(Modifier.fillMaxSize()) {
+                        val viewH = maxHeight
+                        Column(Modifier.fillMaxSize().fadeEdges(textScroll).verticalScroll(textScroll)) {
+                            Column(
+                                Modifier.fillMaxWidth().heightIn(min = viewH),
+                                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
+                            ) {
+                                Text(if (su != null) "سورة ${su.name}" else "", fontFamily = QuranFont, fontSize = 28.sp, lineHeight = 48.sp, color = look.onCard, textAlign = TextAlign.Center)
+                                if (su != null) Muted(
+                                    if (st.ayah > 0) t("الآية ${num(st.ayah, true)} من ${num(su.ayas, true)} • الصفحة ${num(q.page(st.sura, st.ayah), true)}", "Ayah ${st.ayah} of ${su.ayas} • Page ${q.page(st.sura, st.ayah)}")
+                                    else t("الاستعاذة والبسملة", "Isti'adha & basmala"),
+                                )
+                                VSpace(8.dp)
+                                if (su != null && st.ayah > 0) RtlBox {
+                                    Text(
+                                        app.sakina.quran.quran.Tajweed.glueWaqf(q.displayAyah(st.sura, st.ayah)) + " " + app.sakina.quran.ui.quran.ayahMark(st.ayah),
+                                        fontFamily = QuranFont, fontSize = 24.sp, lineHeight = 48.sp, color = look.onCard, textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                }
+                                if (st.inGap) Muted(t("توقّف بين الآيات…", "Pause between ayat…"))
+                                VSpace(6.dp)
+                            }
+                        }
+                        // Scroll hint while more of the ayah is below.
+                        if (textScroll.canScrollForward) Icon(
+                            Icons.Outlined.KeyboardArrowDown, t("مرّر لبقية الآية", "Scroll for the rest of the ayah"),
+                            tint = look.onCardMuted, modifier = Modifier.align(Alignment.BottomCenter).size(22.dp),
                         )
                     }
-                    if (st.inGap) Muted(t("توقّف بين الآيات…", "Pause between ayat…"))
                 }
-            }
-            st.error?.let { e ->
-                SCard(tint = androidx.compose.ui.graphics.lerp(look.card, look.warn, .25f), padding = PaddingValues(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(if (e == AudioErr.OFFLINE) Icons.Outlined.CloudOff else Icons.Outlined.ErrorOutline, null, tint = app.sakina.quran.ui.theme.readableOn(look.warn, look.card))
-                        Spacer(Modifier.width(10.dp))
-                        Text(errorText(e), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                // Control dock: always visible; scrolls itself only on very short screens.
+                Column(
+                    Modifier.fillMaxWidth().heightIn(max = dockMax).verticalScroll(rememberScrollState()).padding(bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    st.error?.let { e ->
+                        val tintBg = androidx.compose.ui.graphics.lerp(look.card, look.warn, .25f)
+                        SCard(tint = tintBg, padding = PaddingValues(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(if (e == AudioErr.OFFLINE) Icons.Outlined.CloudOff else Icons.Outlined.ErrorOutline, null, tint = warnIconOn(tintBg))
+                                Spacer(Modifier.width(10.dp))
+                                Text(errorText(e), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            }
+                            VSpace(8.dp)
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                CtaPill(t("إعادة المحاولة", "Retry")) { Recitation.retry(ctx) }
+                                GhostPill(t("التحميلات", "Downloads")) { onOpen("downloads") }
+                            }
+                        }
                     }
-                    VSpace(10.dp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CtaPill(t("إعادة المحاولة", "Retry")) { Recitation.retry(ctx) }
-                        GhostPill(t("التحميلات", "Downloads")) { onOpen("downloads") }
+                    // Progress
+                    if (st.mode == AudioMode.SURAH) {
+                        SeekBar(st.posMs, st.durMs, ar, t("موضع التلاوة في السورة", "Position in the surah")) { Recitation.seekTo(ctx, it) }
+                    } else {
+                        val fromA = q.fromGlobal(st.fromG).second; val toA = q.fromGlobal(st.toG).second
+                        val total = (st.toG - st.fromG + 1).coerceAtLeast(1)
+                        val doneN = if (st.sura > 0 && st.ayah > 0) (q.global(st.sura, st.ayah) - st.fromG + 1).coerceIn(0, total) else 0
+                        app.sakina.quran.ui.quran.Bar(doneN.toFloat() / total, Modifier.fillMaxWidth())
+                        Row(Modifier.fillMaxWidth()) {
+                            Muted(t("الآيات ${num(fromA, true)}–${num(toA, true)}", "Ayat $fromA–$toA"))
+                            Spacer(Modifier.weight(1f))
+                            if (!st.repeat.isPlain) Muted(t("الدورة ${num(st.pass + 1, true)}", "Pass ${st.pass + 1}") + if (st.repeat.infinite) " / ∞" else " / ${num(st.repeat.rangeTimes, ar)}")
+                        }
+                        // Position inside the ayah being recited.
+                        SeekBar(st.posMs, st.durMs, ar, t("موضع التلاوة في الآية", "Position in the ayah")) { Recitation.seekTo(ctx, it) }
                     }
+                    // Transport
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { Recitation.step(ctx, false) }, modifier = Modifier.size(56.dp)) { DirIcon(Icons.Outlined.SkipPrevious, t("الآية السابقة", "Previous ayah"), look.onCard) }
+                        Box(Modifier.size(70.dp).clip(CircleShape).background(look.cta).press { Recitation.toggle(ctx) }, contentAlignment = Alignment.Center) {
+                            if (st.buffering) CircularProgressIndicator(Modifier.size(32.dp), color = look.onCta, strokeWidth = 3.dp)
+                            else Icon(if (st.playing || st.inGap) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, if (st.playing) t("إيقاف مؤقت", "Pause") else t("تشغيل", "Play"), tint = look.onCta, modifier = Modifier.size(40.dp))
+                        }
+                        IconButton(onClick = { Recitation.step(ctx, true) }, modifier = Modifier.size(56.dp)) { DirIcon(Icons.Outlined.SkipNext, t("الآية التالية", "Next ayah"), look.onCard) }
+                    }
+                    // Options
+                    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Chip(repeatLabel(st.repeat, ar), selected = !st.repeat.isPlain, leading = { Icon(Icons.Outlined.Repeat, null, Modifier.size(18.dp)) }, onClick = { sheet = 1 })
+                        Chip(sleepLabel(st, ar), selected = st.sleep != null, leading = { Icon(Icons.Outlined.Bedtime, null, Modifier.size(18.dp)) }, onClick = { sheet = 2 })
+                        Chip(speedLabel(st.speed, ar), selected = st.speed != 1f, leading = { Icon(Icons.Outlined.Speed, null, Modifier.size(18.dp)) }, onClick = { sheet = 3 })
+                        Chip(t("تتبّع الآية", "Follow along"), selected = prefs.follow, leading = { Icon(Icons.Outlined.MyLocation, null, Modifier.size(18.dp)) }, onClick = { AudioPrefs.update(ctx) { it.copy(follow = !it.follow) } })
+                    }
+                    // Navigate / reciters / stop
+                    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (st.sura > 0) {
+                            Chip(t("في المصحف", "In the mushaf"), leading = { Icon(Icons.AutoMirrored.Outlined.MenuBook, null, Modifier.size(18.dp)) }, onClick = { onOpen("mushaf/${q.page(st.sura, st.ayah.coerceAtLeast(1))}") })
+                            Chip(t("عرض الآيات", "Verse view"), leading = { Icon(Icons.AutoMirrored.Outlined.ViewList, null, Modifier.size(18.dp)) }, onClick = { onOpen("reader/${st.sura}/${st.ayah.coerceAtLeast(1)}") })
+                        }
+                        Chip(t("القرّاء", "Reciters"), leading = { Icon(Icons.Outlined.Headphones, null, Modifier.size(18.dp)) }, onClick = { onOpen("reciters") })
+                        Chip(t("إيقاف التلاوة", "Stop"), leading = { Icon(Icons.Outlined.Close, null, Modifier.size(18.dp)) }, onClick = { Recitation.stop(ctx); onBack() })
+                    }
+                    Muted(
+                        if (st.mode == AudioMode.AYAH) t("الصوت: Islamic Network (cdn.islamic.network) — مجاني للاستخدام غير التجاري.", "Audio: Islamic Network (cdn.islamic.network) — free for non-commercial use.")
+                        else t("الصوت وتوقيت الآيات: mp3quran.net.", "Audio and ayah timings: mp3quran.net."),
+                        Modifier.fillMaxWidth().navigationBarsPadding(),
+                    )
                 }
             }
-            // Progress
-            if (st.mode == AudioMode.SURAH) {
-                var drag by remember { mutableStateOf<Float?>(null) }
-                val dur = st.durMs.coerceAtLeast(1)
-                Slider(
-                    value = drag ?: (st.posMs.toFloat() / dur).coerceIn(0f, 1f), onValueChange = { drag = it },
-                    onValueChangeFinished = { drag?.let { Recitation.seekTo(ctx, (it * dur).toLong()) }; drag = null },
-                    colors = SliderDefaults.colors(thumbColor = look.cta, activeTrackColor = look.cta),
-                    modifier = Modifier.semantics { contentDescription = if (ar) "موضع التلاوة" else "Playback position" },
-                )
-                Row(Modifier.fillMaxWidth()) {
-                    Muted(mmss(st.posMs, ar)); Spacer(Modifier.weight(1f)); Muted(if (st.durMs > 0) mmss(st.durMs, ar) else "—")
-                }
-            } else {
-                val fromA = q.fromGlobal(st.fromG).second; val toA = q.fromGlobal(st.toG).second
-                val total = (st.toG - st.fromG + 1).coerceAtLeast(1)
-                val doneN = if (st.sura > 0 && st.ayah > 0) (q.global(st.sura, st.ayah) - st.fromG + 1).coerceIn(0, total) else 0
-                app.sakina.quran.ui.quran.Bar(doneN.toFloat() / total, Modifier.fillMaxWidth())
-                Row(Modifier.fillMaxWidth()) {
-                    Muted(t("الآيات ${num(fromA, true)}–${num(toA, true)}", "Ayat $fromA–$toA"))
-                    Spacer(Modifier.weight(1f))
-                    if (!st.repeat.isPlain) Muted(t("الدورة ${num(st.pass + 1, true)}", "Pass ${st.pass + 1}") + if (st.repeat.infinite) " / ∞" else " / ${num(st.repeat.rangeTimes, ar)}")
-                }
-            }
-            // Transport
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { Recitation.step(ctx, false) }, modifier = Modifier.size(56.dp)) { DirIcon(Icons.Outlined.SkipPrevious, t("الآية السابقة", "Previous ayah"), look.onCard) }
-                Box(Modifier.size(78.dp).clip(CircleShape).background(look.cta).press { Recitation.toggle(ctx) }, contentAlignment = Alignment.Center) {
-                    if (st.buffering) CircularProgressIndicator(Modifier.size(34.dp), color = look.onCta, strokeWidth = 3.dp)
-                    else Icon(if (st.playing || st.inGap) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, if (st.playing) t("إيقاف مؤقت", "Pause") else t("تشغيل", "Play"), tint = look.onCta, modifier = Modifier.size(42.dp))
-                }
-                IconButton(onClick = { Recitation.step(ctx, true) }, modifier = Modifier.size(56.dp)) { DirIcon(Icons.Outlined.SkipNext, t("الآية التالية", "Next ayah"), look.onCard) }
-            }
-            // Options
-            @OptIn(ExperimentalLayoutApi::class)
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Chip(repeatLabel(st.repeat, ar), selected = !st.repeat.isPlain, leading = { Icon(Icons.Outlined.Repeat, null, Modifier.size(18.dp)) }, onClick = { sheet = 1 })
-                Chip(sleepLabel(st, ar), selected = st.sleep != null, leading = { Icon(Icons.Outlined.Bedtime, null, Modifier.size(18.dp)) }, onClick = { sheet = 2 })
-                Chip(digits(fmtSpeed(st.speed), ar) + "×", selected = st.speed != 1f, leading = { Icon(Icons.Outlined.Speed, null, Modifier.size(18.dp)) }, onClick = { sheet = 3 })
-                Chip(t("تتبّع الآية", "Follow along"), selected = prefs.follow, leading = { Icon(Icons.Outlined.MyLocation, null, Modifier.size(18.dp)) }, onClick = { AudioPrefs.update(ctx) { it.copy(follow = !it.follow) } })
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                if (st.sura > 0) {
-                    Chip(t("في المصحف", "In the mushaf"), leading = { Icon(Icons.AutoMirrored.Outlined.MenuBook, null, Modifier.size(18.dp)) }, onClick = { onOpen("mushaf/${q.page(st.sura, st.ayah.coerceAtLeast(1))}") })
-                    Chip(t("عرض الآيات", "Verse view"), leading = { Icon(Icons.AutoMirrored.Outlined.ViewList, null, Modifier.size(18.dp)) }, onClick = { onOpen("reader/${st.sura}/${st.ayah.coerceAtLeast(1)}") })
-                }
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                GhostPill(t("القرّاء", "Reciters")) { onOpen("reciters") }
-                GhostPill(t("إيقاف التلاوة", "Stop")) { Recitation.stop(ctx); onBack() }
-            }
-            Muted(
-                if (st.mode == AudioMode.AYAH) t("الصوت: Islamic Network (cdn.islamic.network) — مجاني للاستخدام غير التجاري.", "Audio: Islamic Network (cdn.islamic.network) — free for non-commercial use.")
-                else t("الصوت وتوقيت الآيات: mp3quran.net.", "Audio and ayah timings: mp3quran.net."),
-                Modifier.fillMaxWidth(),
-            )
         }
     }
     when (sheet) {
         1 -> q?.let { RepeatSheet(it, st) { sheet = 0 } }
         2 -> SleepSheet(st) { sheet = 0 }
         3 -> SpeedSheet(st) { sheet = 0 }
+    }
+}
+
+/** Seekable position bar with elapsed / duration (Arabic digits in Arabic). Follows the controller position published
+ *  by the service while playing; dragging holds the thumb until release, then seeks. */
+@Composable
+private fun SeekBar(posMs: Long, durMs: Long, ar: Boolean, desc: String, onSeek: (Long) -> Unit) {
+    val look = LocalSakina.current.look
+    var drag by remember { mutableStateOf<Float?>(null) }
+    // Sample the position about twice a second so the bar moves smoothly without recomposing on every tick.
+    var shown by remember { mutableLongStateOf(posMs) }
+    val latest by rememberUpdatedState(posMs)
+    LaunchedEffect(Unit) { while (true) { shown = latest; delay(500) } }
+    LaunchedEffect(durMs) { shown = latest }
+    val dur = durMs.coerceAtLeast(1)
+    val enabled = durMs > 0
+    Column(Modifier.fillMaxWidth()) {
+        Slider(
+            value = drag ?: (shown.toFloat() / dur).coerceIn(0f, 1f), onValueChange = { drag = it },
+            onValueChangeFinished = { drag?.let { val ms = (it * dur).toLong(); shown = ms; onSeek(ms) }; drag = null },
+            enabled = enabled,
+            colors = SliderDefaults.colors(thumbColor = look.cta, activeTrackColor = look.cta),
+            modifier = Modifier.fillMaxWidth().semantics { contentDescription = desc },
+        )
+        Row(Modifier.fillMaxWidth()) {
+            Muted(mmss(drag?.let { (it * dur).toLong() } ?: shown, ar)); Spacer(Modifier.weight(1f)); Muted(if (enabled) mmss(durMs, ar) else "—")
+        }
     }
 }
 
@@ -362,7 +461,9 @@ fun RepeatSheet(q: Quran, st: AudioUiState, onDismiss: () -> Unit) {
     val (s0, fromA0) = q.fromGlobal(st.fromG)
     val su = q.suras[s0 - 1]
     val toA0 = if (q.fromGlobal(st.toG).first == s0) q.fromGlobal(st.toG).second else su.ayas
-    var r by remember { mutableStateOf(if (st.repeat.isPlain) AudioPrefs.p.value.lastRepeat else st.repeat) }
+    // Opens on what is actually applied now (the player chip shows the same); the last custom setting stays one tap away as a preset.
+    var r by remember { mutableStateOf(st.repeat) }
+    val lastUsed = AudioPrefs.p.value.lastRepeat
     var fromA by remember { mutableIntStateOf(fromA0) }
     var toA by remember { mutableIntStateOf(toA0) }
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -376,11 +477,11 @@ fun RepeatSheet(q: Quran, st: AudioUiState, onDismiss: () -> Unit) {
             Stepper(t("إلى الآية", "To ayah"), toA, fromA, su.ayas, ar) { toA = it }
             Muted(t("تكرار كل آية", "Repeat each ayah"))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(1, 2, 3, 5, 7, 10, 20).forEach { n -> Chip("×" + num(n, ar), selected = r.ayahTimes == n, onClick = { r = r.copy(ayahTimes = n) }) }
+                listOf(1, 2, 3, 5, 7, 10, 20).forEach { n -> Chip(timesLabel(n, ar), selected = r.ayahTimes == n, onClick = { r = r.copy(ayahTimes = n) }) }
             }
             Muted(t("تكرار المقطع كله", "Repeat the whole range"))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(1, 2, 3, 5, 10, 0).forEach { n -> Chip(if (n == 0) "∞" else "×" + num(n, ar), selected = r.rangeTimes == n, onClick = { r = r.copy(rangeTimes = n) }) }
+                listOf(1, 2, 3, 5, 10, 0).forEach { n -> Chip(if (n == 0) "∞" else timesLabel(n, ar), selected = r.rangeTimes == n, onClick = { r = r.copy(rangeTimes = n) }) }
             }
             Muted(t("توقّف بعد كل آية (للترديد)", "Pause after each ayah (to repeat after the reciter)"))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -395,10 +496,11 @@ fun RepeatSheet(q: Quran, st: AudioUiState, onDismiss: () -> Unit) {
             }
             Muted(t("إعدادات جاهزة", "Presets"))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Chip(t("استماع عادي", "Plain listening"), onClick = { r = RepeatSpec() })
-                Chip(t("حفظ: ٣× مع توقف", "Memorise: 3× + pause"), onClick = { r = RepeatSpec(3, 1, 2000) })
-                Chip(t("مراجعة: المقطع ×٣", "Review: range ×3"), onClick = { r = RepeatSpec(1, 3, 0) })
-                Chip(t("تلقين: ٥× وتوقف ٥ث", "Talqin: 5× + 5 s"), onClick = { r = RepeatSpec(5, 1, 5000) })
+                Chip(t("استماع عادي", "Plain listening"), selected = r == RepeatSpec(), onClick = { r = RepeatSpec() })
+                if (!lastUsed.isPlain && lastUsed != r) Chip(t("آخر إعداد: ", "Last used: ") + repeatLabel(lastUsed, ar), onClick = { r = lastUsed })
+                Chip(t("حفظ: ×٣ مع توقف", "Memorise: ×3 + pause"), selected = r == RepeatSpec(3, 1, 2000), onClick = { r = RepeatSpec(3, 1, 2000) })
+                Chip(t("مراجعة: المقطع ×٣", "Review: range ×3"), selected = r == RepeatSpec(1, 3, 0), onClick = { r = RepeatSpec(1, 3, 0) })
+                Chip(t("تلقين: ×٥ وتوقف ٥ث", "Talqin: ×5 + 5 s"), selected = r == RepeatSpec(5, 1, 5000), onClick = { r = RepeatSpec(5, 1, 5000) })
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CtaPill(t("تطبيق", "Apply"), enabled = canLoop || r.isPlain) { Recitation.setRepeat(ctx, q, r, fromA, toA); onDismiss() }
@@ -431,9 +533,9 @@ fun SleepSheet(st: AudioUiState, onDismiss: () -> Unit) {
             Muted(t("يخفت الصوت تدريجيًا في آخر ٨ ثوانٍ ثم يتوقف.", "The sound fades out over the last 8 seconds, then stops."))
             if (st.sleep != null) Text(sleepLabel(st, ar), style = MaterialTheme.typography.titleMedium, color = look.cta)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Chip(t("إيقاف المؤقّت", "Off"), selected = st.sleep == null, onClick = { Recitation.setSleep(null); onDismiss() })
+                Chip(t("بدون مؤقّت", "No timer"), selected = st.sleep == null, onClick = { Recitation.setSleep(null); onDismiss() })
                 listOf(5, 10, 15, 30, 45, 60, 90).forEach { m ->
-                    Chip(t("${num(m, true)} دقيقة", "$m min"), selected = (st.sleep as? SleepSpec.Minutes)?.minutes == m, onClick = { Recitation.setSleep(SleepSpec.Minutes(m)); onDismiss() })
+                    Chip(t(minutesAr(m), "$m min"), selected = (st.sleep as? SleepSpec.Minutes)?.minutes == m, onClick = { Recitation.setSleep(SleepSpec.Minutes(m)); onDismiss() })
                 }
                 Chip(t("نهاية الآية", "End of ayah"), selected = st.sleep == SleepSpec.EndOfAyah, onClick = { Recitation.setSleep(SleepSpec.EndOfAyah); onDismiss() })
                 Chip(t("نهاية السورة", "End of surah"), selected = st.sleep == SleepSpec.EndOfSurah, onClick = { Recitation.setSleep(SleepSpec.EndOfSurah); onDismiss() })
@@ -453,8 +555,12 @@ fun SpeedSheet(st: AudioUiState, onDismiss: () -> Unit) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(t("سرعة التلاوة", "Playback speed"), style = MaterialTheme.typography.titleLarge)
             Muted(t("تتغير السرعة مع بقاء طبقة صوت القارئ كما هي.", "Speed changes while the reciter's pitch stays natural."))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SPEEDS.forEach { s -> Chip(digits(fmtSpeed(s), ar) + "×", selected = st.speed == s, onClick = { Recitation.setSpeed(ctx, s); onDismiss() }) }
+            // Balanced rows (4 + 3) so the last speed never sits alone on its own line.
+            val perRow = (SPEEDS.size + 1) / 2
+            SPEEDS.chunked(perRow).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
+                    row.forEach { s -> Chip(speedLabel(s, ar), selected = st.speed == s, onClick = { Recitation.setSpeed(ctx, s); onDismiss() }) }
+                }
             }
         }
     }
