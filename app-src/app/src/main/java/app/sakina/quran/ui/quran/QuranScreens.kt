@@ -54,6 +54,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -175,7 +176,7 @@ fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
             }
         }
         // AU1: continue listening / now playing (renders nothing until there is a session to resume).
-        if (audioActive || lastListen != null) item(key = "listen") { app.sakina.quran.ui.audio.ContinueListeningCard(quran, onOpen) }
+        if (!audioActive && lastListen != null) item(key = "listen") { app.sakina.quran.ui.audio.ContinueListeningCard(quran, onOpen) }
         // Mushaf + today's wird (QR02 / QR29)
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -210,7 +211,7 @@ fun QuranTab(user: UserData, onOpen: (String) -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Chip(t("السور", "Surahs"), selected = tab == 0, onClick = { tab = 0 })
                 Chip(t("الأجزاء", "Juz"), selected = tab == 1, onClick = { tab = 1 })
-                Chip(t("العلامات", "Bookmarks") + " " + num(user.quranBookmarks.size, ar), selected = tab == 2, onClick = { tab = 2 })
+                Chip(t("العلامات", "Bookmarks") + (if (user.quranBookmarks.isEmpty()) "" else " " + num(user.quranBookmarks.size, ar)), selected = tab == 2, onClick = { tab = 2 })
             }
         }
         when (tab) {
@@ -294,7 +295,10 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
     val trIds = prefs.activeTranslations(ar).filter { app.sakina.quran.quran.Editions.available(ctx, it) }
     val tr = trIds.map { id -> id to rememberEdition(id) }
     val translit = rememberEdition(if (prefs.translit) "en.transliteration" else null)
-    val tafsir = rememberEdition(if (prefs.inlineTafsir) prefs.tafsir else null)
+    // AU1: Arabic UI with no explicit translation choice shows the bundled Arabic tafsir (Al-Muyassar) under each
+    // ayah instead of any English text; an explicit choice (even "none") is always kept. EN behaviour is unchanged.
+    val arDefaultTafsir = ar && prefs.translations == null && !prefs.inlineTafsir && app.sakina.quran.quran.Editions.available(ctx, "ar.muyassar")
+    val tafsir = rememberEdition(if (prefs.inlineTafsir) prefs.tafsir else if (arDefaultTafsir) "ar.muyassar" else null)
     var sheet by remember { mutableStateOf<Int?>(null) }
     var showSettings by remember { mutableStateOf(false) }
     var scrolling by remember { mutableStateOf(false) }
@@ -341,14 +345,31 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
         val playingG = rememberPlayingAyah(quran)
         val follow = rememberAudioFollow()
         val playColor = playingColor(look.dark)
-        LaunchedEffect(playingG, follow) {
-            val g = playingG ?: return@LaunchedEffect
-            if (!follow) return@LaunchedEffect
-            val (ps, pa) = quran.fromGlobal(g)
-            if (ps != sura || list.isScrollInProgress) return@LaunchedEffect
-            val vis = list.layoutInfo.visibleItemsInfo
-            val shown = vis.firstOrNull { it.index == pa }?.let { it.offset >= list.layoutInfo.viewportStartOffset && it.offset + it.size <= list.layoutInfo.viewportEndOffset } ?: false
-            if (!shown) runCatching { list.animateScrollToItem(pa.coerceIn(1, s.ayas), -24) }
+        // Follow loop: also catches the ayah already playing when the reader opens mid-session (after the
+        // initial scroll-to-ayah has run and the list has laid out); a user drag pauses it until the next ayah.
+        val curPlaying by rememberUpdatedState(playingG)
+        val curFollow by rememberUpdatedState(follow)
+        var userHold by remember { mutableStateOf<Int?>(null) }
+        LaunchedEffect(list) {
+            list.interactionSource.interactions.collect { if (it is androidx.compose.foundation.interaction.DragInteraction.Start) userHold = curPlaying ?: -1 }
+        }
+        LaunchedEffect(sura, quran) {
+            kotlinx.coroutines.delay(300)
+            while (true) {
+                val g = curPlaying
+                if (g != null && userHold != null && userHold != g) userHold = null
+                if (g != null && curFollow && userHold == null && !list.isScrollInProgress && list.layoutInfo.totalItemsCount > 0) {
+                    val (ps, pa) = quran.fromGlobal(g)
+                    if (ps == sura) {
+                        val info = list.layoutInfo
+                        val vi = info.visibleItemsInfo.firstOrNull { v -> v.index == pa }
+                        val shown = vi != null && vi.offset >= info.viewportStartOffset && vi.offset + vi.size <= info.viewportEndOffset
+                        val partlyTall = vi != null && vi.size > (info.viewportEndOffset - info.viewportStartOffset) && vi.offset <= info.viewportStartOffset + 4
+                        if (!shown && !partlyTall) runCatching { list.animateScrollToItem(pa.coerceIn(1, s.ayas), -24) }
+                    }
+                }
+                kotlinx.coroutines.delay(400)
+            }
         }
         LaunchedEffect(sura) {
             snapshotFlow { list.firstVisibleItemIndex }.distinctUntilChanged().debounce(800).collect { i ->
@@ -381,13 +402,13 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
                 val hl = qu.highlights["$sura:$a"]
                 val isPlaying = g == playingG
                 val tint = when {
-                    isPlaying -> androidx.compose.ui.graphics.lerp(look.card, playColor, if (look.dark) .24f else .18f)
+                    isPlaying -> androidx.compose.ui.graphics.lerp(look.card, playColor, if (look.dark) .34f else .26f)
                     hl != null -> androidx.compose.ui.graphics.lerp(look.card, HL_COLORS[hl.coerceIn(0, 4)], if (look.dark) .22f else .35f)
                     isLast -> androidx.compose.ui.graphics.lerp(look.card, look.cta, .16f)
                     else -> null
                 }
                 SCard(
-                    modifier = if (isPlaying) Modifier.border(2.dp, playColor.copy(alpha = .9f), app.sakina.quran.ui.kit.CardShape) else Modifier,
+                    modifier = if (isPlaying) Modifier.border(3.dp, playColor, app.sakina.quran.ui.kit.CardShape) else Modifier,
                     padding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 8.dp), tint = tint, onClick = { sheet = a },
                 ) {
                     Rtl {
@@ -418,13 +439,14 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(if (ar) "${s.name} ${num(a, true)}" else "${s.index}:$a", style = MaterialTheme.typography.labelMedium, color = look.onCardMuted, modifier = Modifier.weight(1f))
                         if (g in quran.sajdas) Text("۩", color = look.cta, modifier = Modifier.padding(horizontal = 6.dp))
+                        val iconTint = if (tint != null) look.onCard else look.onCardMuted
                         IconButton(onClick = { onBookmark(sura, a) }) {
-                            Icon(if (marked) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder, t("علامة", "Bookmark"), tint = if (marked) look.cta else look.onCardMuted)
+                            Icon(if (marked) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder, t("علامة", "Bookmark"), tint = if (marked) look.cta else iconTint)
                         }
                         IconButton(onClick = { copyText(ctx, "${quran.ayah(sura, a)} [${s.name}: $a]"); Toast.makeText(ctx, if (ar) "تم النسخ" else "Copied", Toast.LENGTH_SHORT).show() }) {
-                            Icon(Icons.Outlined.ContentCopy, t("نسخ", "Copy"), tint = look.onCardMuted)
+                            Icon(Icons.Outlined.ContentCopy, t("نسخ", "Copy"), tint = iconTint)
                         }
-                        IconButton(onClick = { onOpen("share/$sura/$a/$a") }) { Icon(Icons.Outlined.Share, t("مشاركة", "Share"), tint = look.onCardMuted) }
+                        IconButton(onClick = { onOpen("share/$sura/$a/$a") }) { Icon(Icons.Outlined.Share, t("مشاركة", "Share"), tint = iconTint) }
                     }
                 }
             }
