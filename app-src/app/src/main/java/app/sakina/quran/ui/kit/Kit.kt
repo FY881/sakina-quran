@@ -158,8 +158,12 @@ fun Chip(text: String, selected: Boolean = false, modifier: Modifier = Modifier,
             .press(onClick = onClick).padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        leading?.invoke()
-        Text(text, style = MaterialTheme.typography.labelLarge, color = if (selected) l.onChipSelected else l.onCard, maxLines = 1)
+        val fg = if (selected) l.onChipSelected else l.onCard
+        // Leading icons follow the label colour, so they stay visible on the selected (solid) pill in every theme.
+        CompositionLocalProvider(LocalContentColor provides fg) {
+            leading?.invoke()
+            Text(text, style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1, softWrap = false)
+        }
     }
 }
 
