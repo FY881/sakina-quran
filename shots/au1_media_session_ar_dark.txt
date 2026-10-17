@@ -1,0 +1,104 @@
+=== test clip 2:255 (player) (01:33:10)
+    package=com.android.server.telecom
+    active=false
+    metadata: null
+      package=app.sakina.quran.debug
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=11, buffered position=3999, speed=1.0, updated=542230, actions=7340027, custom actions=[], active item id=2, error=null}
+      metadata: size=8, description=سورة البقرة • الآية ٢٥٧, مشاري راشد العفاسي, سكينة — القرآن الكريم
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=31964, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=31986, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=35230, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=35244, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.youtube
+      active=false
+      state=PlaybackState {state=NONE(0), position=0, buffered position=0, speed=1.0, updated=38235, actions=8192, custom actions=[], active item id=-1, error=null}
+      metadata: null
+      package=com.google.android.googlequicksearchbox
+      active=true
+      state=PlaybackState {state=NONE(0), position=0, buffered position=0, speed=0.0, updated=40529, actions=2409991, custom actions=[Action:mName='Rewind 10 seconds, mIcon=2131234345, mExtras=null, Action:mName='Fast forward 30 second, mIcon=2131234125, mExtras=null, Action:mName='Skip to next episode, mIcon=2131234405, mExtras=null], active item id=-1, error=null}
+      metadata: size=0, description=null, null, null
+      package=com.google.android.apps.youtube.music
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=1.0, updated=43265, actions=11828, custom actions=[], active item id=-1, error=Please sign in to YouTube Music.}
+      metadata: null
+=== real stream ayah:2:255 (+8s) (01:35:23)
+    package=com.android.server.telecom
+    active=false
+    metadata: null
+      package=app.sakina.quran.debug
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=11163, buffered position=51917, speed=1.0, updated=674805, actions=7340027, custom actions=[], active item id=0, error=null}
+      metadata: size=8, description=سورة البقرة • الآية ٢٥٥, مشاري راشد العفاسي, سكينة — القرآن الكريم
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=31964, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=31986, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=35230, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=35244, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.youtube
+      active=false
+      state=PlaybackState {state=NONE(0), position=0, buffered position=0, speed=1.0, updated=38235, actions=8192, custom actions=[], active item id=-1, error=null}
+      metadata: null
+      package=com.google.android.googlequicksearchbox
+      active=true
+      state=PlaybackState {state=NONE(0), position=0, buffered position=0, speed=0.0, updated=40529, actions=2409991, custom actions=[Action:mName='Rewind 10 seconds, mIcon=2131234345, mExtras=null, Action:mName='Fast forward 30 second, mIcon=2131234125, mExtras=null, Action:mName='Skip to next episode, mIcon=2131234405, mExtras=null], active item id=-1, error=null}
+      metadata: size=0, description=null, null, null
+      package=com.google.android.apps.youtube.music
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=1.0, updated=43265, actions=11828, custom actions=[], active item id=-1, error=Please sign in to YouTube Music.}
+      metadata: null
+=== offline ayah:3:1 (01:35:39)
+    package=com.android.server.telecom
+    active=false
+    metadata: null
+      package=app.sakina.quran.debug
+      active=true
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=687008, actions=7339701, custom actions=[], active item id=0, error=Source error}
+      metadata: size=8, description=سورة آل عمران • الآية ١, مشاري راشد العفاسي, سكينة — القرآن الكريم
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=31964, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=31986, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=35230, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=35244, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.youtube
+      active=false
+      state=PlaybackState {state=NONE(0), position=0, buffered position=0, speed=1.0, updated=38235, actions=8192, custom actions=[], active item id=-1, error=null}
+      metadata: null
+      package=com.google.android.googlequicksearchbox
+      active=true
+      state=PlaybackState {state=NONE(0), position=0, buffered position=0, speed=0.0, updated=40529, actions=2409991, custom actions=[Action:mName='Rewind 10 seconds, mIcon=2131234345, mExtras=null, Action:mName='Fast forward 30 second, mIcon=2131234125, mExtras=null, Action:mName='Skip to next episode, mIcon=2131234405, mExtras=null], active item id=-1, error=null}
+      metadata: size=0, description=null, null, null

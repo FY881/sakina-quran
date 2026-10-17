@@ -1,0 +1,987 @@
++ SDK=/usr/local/lib/android/sdk
++ export PATH=/usr/local/lib/android/sdk/cmdline-tools/latest/bin:/usr/local/lib/android/sdk/emulator:/usr/local/lib/android/sdk/platform-tools:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
++ PATH=/usr/local/lib/android/sdk/cmdline-tools/latest/bin:/usr/local/lib/android/sdk/emulator:/usr/local/lib/android/sdk/platform-tools:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
++ ls -la /dev/kvm
+crw-rw-rw- 1 root kvm 10, 232 Oct 17 01:23 /dev/kvm
++ nproc
+4
++ free -g
+               total        used        free      shared  buff/cache   available
+Mem:              15           1          12           0           2          14
+Swap:              2           0           2
++ sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/local/share/boost /usr/local/lib/node_modules /opt/hostedtoolcache/CodeQL
++ df -h /home/runner
++ tail -1
+/dev/root       145G   48G   97G  33% /
++ sdkmanager emulator platform-tools 'system-images;android-34;google_apis;x86_64'
++ echo sdk 0
+sdk 0
++ export ANDROID_AVD_HOME=/home/runner/.android/avd
++ ANDROID_AVD_HOME=/home/runner/.android/avd
++ mkdir -p /home/runner/.android/avd
++ echo no
++ avdmanager create avd -n t -k 'system-images;android-34;google_apis;x86_64' -d pixel_6 --force -p /home/runner/.android/avd/t.avd
++ tail -5
+Loading local repository...                                                     [=========                              ] 25% Loading local repository...       [=========                              ] 25% Fetch remote repository...        [=======================================] 100% Fetch remote repository...       
+Auto-selecting single ABI x86_64
++ ls -la /home/runner/.android/avd
+total 16
+drwxr-xr-x 3 runner runner 4096 Oct 17 01:24 .
+drwxr-xr-x 3 runner runner 4096 Oct 17 01:24 ..
+drwxr-xr-x 2 runner runner 4096 Oct 17 01:24 t.avd
+-rw-r--r-- 1 runner runner   78 Oct 17 01:24 t.ini
++ emulator -list-avds
+t
++ sed -i '/disk.dataPartition.size/d;/hw.ramSize/d' /home/runner/.android/avd/t.avd/config.ini
++ printf 'disk.dataPartition.size=3G\nhw.ramSize=3072\nhw.keyboard=yes\n'
++ emulator -version
++ head -2
+/usr/local/lib/android/sdk/emulator/qemu/linux-x86_64/qemu-system-x86_64: error while loading shared libraries: libpulse.so.0: cannot open shared object file: No such file or directory
++ sleep 20
++ nohup emulator -avd t -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -camera-front none -accel on -no-metrics
++ tail -20 emu_run.log
+INFO         |   androidboot.vbmeta.digest=451e57ed688ff746d2c636d52169ade253e2bc5bb30a5c3ff23679ca15d3bcd3
+INFO         |   androidboot.vbmeta.hash_alg=sha256
+INFO         |   androidboot.vbmeta.size=6656
+INFO         |   androidboot.veritymode=enforcing
+WARNING: cannnot unmap ptr 0x7fb074e01000 as it is in the protected range from 0x7fafb4e00000 to 0x7fb075000000
+INFO         | Monitoring duration of emulator setup.
+WARNING      | The emulator now requires a signed jwt token for gRPC access! Use the -grpc flag if you really want an open unprotected grpc port
+INFO         | Using security allow list from: /usr/local/lib/android/sdk/emulator/lib/emulator_access.json
+INFO         | The active JSON Web Key Sets can be found here: /run/user/1001/avd/running/2548/jwks/bb062730-f0e0-4a59-9c74-a19698ba9bb3/active.jwk
+INFO         | Scanning /run/user/1001/avd/running/2548/jwks/bb062730-f0e0-4a59-9c74-a19698ba9bb3 for jwk keys.
+INFO         | Started GRPC server at 127.0.0.1:8554, security: Local, auth: +token
+INFO         | Advertising in: /run/user/1001/avd/running/pid_2548.ini
+INFO         | Activated packet streamer for bluetooth emulation
+INFO         | Successfully initialized netsim WiFi
+INFO         | Setting display: 0 configuration to: 1080x2400, dpi: 420x420 
+INFO         | setDisplayActiveConfig: id:0, 1080x2400
+INFO         | emulatorSetupEnvironment: Environment scene is not required
+USER_INFO    | Emulator is performing a full startup. This may take upto two minutes, or more.
+WARNING      | Failed to process .ini file /home/runner/.android/emu-update-last-check.ini for reading.
+WARNING      | Failed to process .ini file /home/runner/.android/emu-update-last-check.ini for reading.
++ timeout 300 adb wait-for-device
+* daemon not running; starting now at tcp:5037
+* daemon started successfully
++ echo wait 0
+wait 0
++ '[' 0 = 0 ']'
+++ seq 1 150
++ for i in $(seq 1 150)
+++ timeout 10 adb shell getprop sys.boot_completed
+++ tr -d '\r'
++ '[' '' = 1 ']'
++ sleep 4
++ for i in $(seq 1 150)
+++ timeout 10 adb shell getprop sys.boot_completed
+++ tr -d '\r'
++ '[' '' = 1 ']'
++ sleep 4
++ for i in $(seq 1 150)
+++ timeout 10 adb shell getprop sys.boot_completed
+++ tr -d '\r'
++ '[' '' = 1 ']'
++ sleep 4
++ for i in $(seq 1 150)
+++ timeout 10 adb shell getprop sys.boot_completed
+++ tr -d '\r'
++ '[' '' = 1 ']'
++ sleep 4
++ for i in $(seq 1 150)
+++ tr -d '\r'
+++ timeout 10 adb shell getprop sys.boot_completed
++ '[' 1 = 1 ']'
++ break
+++ adb shell getprop sys.boot_completed
++ echo booted=1
+booted=1
++ tail -30 emu_run.log
+INFO         |   androidboot.qemu.gltransport.drawFlushInterval=800
+INFO         |   androidboot.qemu.gltransport.name=pipe
+INFO         |   androidboot.qemu.hwcodec.avcdec=2
+INFO         |   androidboot.qemu.hwcodec.hevcdec=2
+INFO         |   androidboot.qemu.hwcodec.vpxdec=2
+INFO         |   androidboot.qemu.settings.system.screen_off_timeout=2147483647
+INFO         |   androidboot.qemu.skin=1080x2400
+INFO         |   androidboot.qemu.virtiowifi=1
+INFO         |   androidboot.qemu.vsync=60
+INFO         |   androidboot.serialno=EMULATOR37X2X12X0
+INFO         |   androidboot.vbmeta.digest=451e57ed688ff746d2c636d52169ade253e2bc5bb30a5c3ff23679ca15d3bcd3
+INFO         |   androidboot.vbmeta.hash_alg=sha256
+INFO         |   androidboot.vbmeta.size=6656
+INFO         |   androidboot.veritymode=enforcing
+WARNING: cannnot unmap ptr 0x7fb074e01000 as it is in the protected range from 0x7fafb4e00000 to 0x7fb075000000
+INFO         | Monitoring duration of emulator setup.
+WARNING      | The emulator now requires a signed jwt token for gRPC access! Use the -grpc flag if you really want an open unprotected grpc port
+INFO         | Using security allow list from: /usr/local/lib/android/sdk/emulator/lib/emulator_access.json
+INFO         | The active JSON Web Key Sets can be found here: /run/user/1001/avd/running/2548/jwks/bb062730-f0e0-4a59-9c74-a19698ba9bb3/active.jwk
+INFO         | Scanning /run/user/1001/avd/running/2548/jwks/bb062730-f0e0-4a59-9c74-a19698ba9bb3 for jwk keys.
+INFO         | Started GRPC server at 127.0.0.1:8554, security: Local, auth: +token
+INFO         | Advertising in: /run/user/1001/avd/running/pid_2548.ini
+INFO         | Activated packet streamer for bluetooth emulation
+INFO         | Successfully initialized netsim WiFi
+INFO         | Setting display: 0 configuration to: 1080x2400, dpi: 420x420 
+INFO         | setDisplayActiveConfig: id:0, 1080x2400
+INFO         | emulatorSetupEnvironment: Environment scene is not required
+USER_INFO    | Emulator is performing a full startup. This may take upto two minutes, or more.
+WARNING      | Failed to process .ini file /home/runner/.android/emu-update-last-check.ini for reading.
+WARNING      | Failed to process .ini file /home/runner/.android/emu-update-last-check.ini for reading.
++ adb shell settings put global window_animation_scale 0
++ adb shell settings put global transition_animation_scale 0
++ adb shell settings put global animator_duration_scale 0
++ adb shell wm size
+Physical size: 1080x2400
++ sleep 45
+++ ls -d /usr/local/lib/android/sdk/build-tools/34.0.0 /usr/local/lib/android/sdk/build-tools/35.0.0 /usr/local/lib/android/sdk/build-tools/35.0.1 /usr/local/lib/android/sdk/build-tools/36.0.0 /usr/local/lib/android/sdk/build-tools/36.1.0 /usr/local/lib/android/sdk/build-tools/37.0.0
+++ tail -1
++ export PATH=/usr/local/lib/android/sdk/cmdline-tools/latest/bin:/usr/local/lib/android/sdk/emulator:/usr/local/lib/android/sdk/platform-tools:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/usr/local/lib/android/sdk/build-tools/37.0.0
++ PATH=/usr/local/lib/android/sdk/cmdline-tools/latest/bin:/usr/local/lib/android/sdk/emulator:/usr/local/lib/android/sdk/platform-tools:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/usr/local/lib/android/sdk/build-tools/37.0.0
++ timeout 1500 bash ci/shots.sh
+++ ls app-src/app/build/outputs/apk/debug/app-debug.apk
+++ head -1
++ APK=app-src/app/build/outputs/apk/debug/app-debug.apk
+++ aapt2 dump packagename app-src/app/build/outputs/apk/debug/app-debug.apk
++ PKG=app.sakina.quran.debug
++ echo PKG=app.sakina.quran.debug
+PKG=app.sakina.quran.debug
++ mkdir -p shots
++ adb shell settings put global hide_error_dialogs 1
++ adb install -r -g app-src/app/build/outputs/apk/debug/app-debug.apk
+Performing Streamed Install
+Success
++ adb shell appops set app.sakina.quran.debug SCHEDULE_EXACT_ALARM allow
++ adb shell settings put system time_12_24 12
++ SET=ar_dark
++ lang=ar
++ m=dark
+++ echo dark
+++ tr a-z A-Z
++ M=DARK
++ adb shell cmd locale set-app-locales app.sakina.quran.debug --locales ar
++ launch ar quran DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''quran'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 6346
+WaitTime: 6349
+Complete
++ sleep 6
++ shot ar_dark_q01_quran_tab
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar mushaf/2 DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''mushaf/2'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3651
+WaitTime: 3653
+Complete
++ sleep 6
++ shot ar_dark_q02_mushaf_p2
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar mushaf/42 DARK tajweed=1
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''mushaf/42'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=1'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 4244
+WaitTime: 4251
+Complete
++ sleep 6
++ shot ar_dark_q03_mushaf_tajweed
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ adb shell input tap 540 1150
++ sleep 3
++ shot ar_dark_q04_ayah_sheet
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ adb shell input swipe 540 1900 540 500 500
++ sleep 1
++ waitloaded 15
+++ seq 1 15
++ for i in $(seq 1 ${1:-15})
++ timeout 8 adb shell uiautomator dump /sdcard/w.xml
++ adb pull /sdcard/w.xml /tmp/w.xml
++ grep -q 'جارٍ التحميل\|Loading…' /tmp/w.xml
++ return 0
++ shot ar_dark_q04b_ayah_sheet_tafsir
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar mushaf/582 DARK tajweed=0,paper=1
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''mushaf/582'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=1'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3453
+WaitTime: 3456
+Complete
++ sleep 6
++ shot ar_dark_q05_mushaf_sepia
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar reader/2/255 DARK translit=1,tafsir=1,tr=en.sahih
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''reader/2/255'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''translit=1,tafsir=1,tr=en.sahih'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3409
+WaitTime: 3448
+Complete
++ sleep 6
++ waitloaded 10
+++ seq 1 10
++ for i in $(seq 1 ${1:-15})
++ timeout 8 adb shell uiautomator dump /sdcard/w.xml
++ adb pull /sdcard/w.xml /tmp/w.xml
++ grep -q 'جارٍ التحميل\|Loading…' /tmp/w.xml
++ return 0
++ shot ar_dark_q06_reader_tr
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ '[' ar = ar ']'
++ ax=330
++ adb shell input tap 330 205
++ sleep 3
++ snap ar_dark_q06c_reader_autoscroll
++ adb exec-out screencap -p
++ launch ar tafsir/2/255 DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''tafsir/2/255'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 2974
+WaitTime: 3070
+Complete
++ sleep 6
++ waitloaded 15
+++ seq 1 15
++ for i in $(seq 1 ${1:-15})
++ timeout 8 adb shell uiautomator dump /sdcard/w.xml
++ adb pull /sdcard/w.xml /tmp/w.xml
++ grep -q 'جارٍ التحميل\|Loading…' /tmp/w.xml
++ return 0
++ shot ar_dark_q07_tafsir
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar quran_library DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''quran_library'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3403
+WaitTime: 3407
+Complete
++ sleep 6
++ shot ar_dark_q08_library
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar khatma DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''khatma'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 2982
+WaitTime: 2985
+Complete
++ sleep 6
++ shot ar_dark_q09_khatma
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar khatma_new DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''khatma_new'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3266
+WaitTime: 3269
+Complete
++ sleep 6
++ shot ar_dark_q10_khatma_new
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar quran_stats DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''quran_stats'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3451
+WaitTime: 3481
+Complete
++ sleep 6
++ shot ar_dark_q11_stats
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ adb shell input swipe 540 1800 540 600 500
++ sleep 2
++ shot ar_dark_q11b_stats_challenges
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar share/2/255/255 DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''share/2/255/255'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3339
+WaitTime: 3347
+Complete
++ sleep 6
++ sleep 2
++ shot ar_dark_q12_share
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar reciters DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''reciters'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3323
+WaitTime: 3334
+Complete
++ sleep 6
++ shot ar_dark_q13_reciters
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar topic/patience DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''topic/patience'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3021
+WaitTime: 3026
+Complete
++ sleep 6
++ shot ar_dark_q14_topic
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar surah_info/18 DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''surah_info/18'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3075
+WaitTime: 3080
+Complete
++ sleep 6
++ shot ar_dark_q15_surah_info
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar quran_marks DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''quran_marks'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3295
+WaitTime: 3298
+Complete
++ sleep 6
++ shot ar_dark_q16_marks
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar tajweed DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''tajweed'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 2958
+WaitTime: 2962
+Complete
++ sleep 6
++ shot ar_dark_q17_tajweed
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ '[' ar = ar ']'
++ q=%D8%B1%D8%AD%D9%85%D8%A9
++ launch ar 'quran_search?q=%D8%B1%D8%AD%D9%85%D8%A9' DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''quran_search?q=%D8%B1%D8%AD%D9%85%D8%A9'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3254
+WaitTime: 3257
+Complete
++ sleep 6
++ shot ar_dark_q18_search
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar home DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''home'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3485
+WaitTime: 3522
+Complete
++ sleep 6
++ shot ar_dark_r01_home
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar prayers DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''prayers'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 2939
+WaitTime: 2941
+Complete
++ sleep 6
++ shot ar_dark_r02_prayers
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar explore DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''explore'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 2930
+WaitTime: 2933
+Complete
++ sleep 6
++ shot ar_dark_r03_explore
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar reader/1/1 DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''reader/1/1'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3505
+WaitTime: 3538
+Complete
++ sleep 6
++ shot ar_dark_r04_reader
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar azkar DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''azkar'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3053
+WaitTime: 3079
+Complete
++ sleep 6
++ shot ar_dark_r05_azkar
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar azkar/morning@1 DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''azkar/morning@1'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3285
+WaitTime: 3289
+Complete
++ sleep 6
++ shot ar_dark_r06_azkar_session
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar 'hisn?cat=SICK' DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''hisn?cat=SICK'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3148
+WaitTime: 3218
+Complete
++ sleep 6
++ shot ar_dark_r07_hisn
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar tasbih DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''tasbih'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3139
+WaitTime: 3156
+Complete
++ sleep 6
++ shot ar_dark_r08_tasbih
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar names DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''names'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3067
+WaitTime: 3133
+Complete
++ sleep 6
++ shot ar_dark_r09_names
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar profile DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''profile'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3204
+WaitTime: 3209
+Complete
++ sleep 6
++ shot ar_dark_r10_profile
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar 'onboarding?step=0' DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''onboarding?step=0'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 2981
+WaitTime: 2997
+Complete
++ sleep 6
++ shot ar_dark_r11_onboarding
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ launch ar 'duas?tab=1' DARK
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''duas?tab=1'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3036
+WaitTime: 3041
+Complete
++ sleep 6
++ shot ar_dark_r12_duas_refs
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ A=au1_ar_dark
++ au ar player DARK test:2:255
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''player'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'' --es afollow 1 --es play '\''test:2:255'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3381
+WaitTime: 3385
+Complete
++ sleep 7
++ shot au1_ar_dark_01_player_test
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ msess 'test clip 2:255 (player)'
+++ date -u +%T
++ echo '=== test clip 2:255 (player) (01:33:10)'
++ adb shell dumpsys media_session
++ grep -iE 'package=|state=PlaybackState|metadata|description=|active='
++ adb shell cmd statusbar expand-notifications
++ sleep 3
++ snap au1_ar_dark_02_notification
++ adb exec-out screencap -p
++ adb shell cmd statusbar collapse
++ sleep 1
++ sleep 2
++ '[' ar = ar ']'
++ sheetshot au1_ar_dark_03_sheet_repeat 'بدون تكرار'
++ local n=au1_ar_dark_03_sheet_repeat
++ shift
++ for try in 1 2 3
++ taptext 'بدون تكرار'
++ timeout 10 adb shell uiautomator dump /sdcard/t.xml
++ adb pull /sdcard/t.xml /tmp/t.xml
++ python3 - 'بدون تكرار'
+TAPPED بدون تكرار
++ sleep 4
++ snap au1_ar_dark_03_sheet_repeat
++ adb exec-out screencap -p
++ closesheet
++ adb shell input keyevent BACK
++ sleep 3
++ return 0
++ '[' ar = ar ']'
++ sheetshot au1_ar_dark_04_sheet_sleep 'مؤقّت النوم'
++ local n=au1_ar_dark_04_sheet_sleep
++ shift
++ for try in 1 2 3
++ taptext 'مؤقّت النوم'
++ timeout 10 adb shell uiautomator dump /sdcard/t.xml
++ adb pull /sdcard/t.xml /tmp/t.xml
++ python3 - 'مؤقّت النوم'
+TAPPED مؤقّت النوم
++ sleep 4
++ snap au1_ar_dark_04_sheet_sleep
++ adb exec-out screencap -p
++ closesheet
++ adb shell input keyevent BACK
++ sleep 3
++ return 0
++ '[' ar = ar ']'
++ sheetshot au1_ar_dark_05_sheet_speed ×١ ×١٫٠
++ local n=au1_ar_dark_05_sheet_speed
++ shift
++ for try in 1 2 3
++ taptext ×١ ×١٫٠
++ timeout 10 adb shell uiautomator dump /sdcard/t.xml
++ adb pull /sdcard/t.xml /tmp/t.xml
++ python3 - ×١ ×١٫٠
+TAPPED ×١
++ sleep 4
++ snap au1_ar_dark_05_sheet_speed
++ adb exec-out screencap -p
++ closesheet
++ adb shell input keyevent BACK
++ sleep 3
++ return 0
++ au ar quran DARK test:2:255
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''quran'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'' --es afollow 1 --es play '\''test:2:255'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3098
+WaitTime: 3101
+Complete
++ sleep 7
++ shot au1_ar_dark_06_mini_quran_tab
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ au ar mushaf/42 DARK test:2:255
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''mushaf/42'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'' --es afollow 1 --es play '\''test:2:255'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3483
+WaitTime: 3486
+Complete
++ sleep 7
++ shot au1_ar_dark_07_mushaf_playing
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ au ar reader/2/255 DARK test:2:255
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''reader/2/255'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'' --es afollow 1 --es play '\''test:2:255'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3254
+WaitTime: 3270
+Complete
++ sleep 7
++ shot au1_ar_dark_08_reader_playing
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ au ar downloads DARK test:2:255
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''downloads'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'' --es afollow 1 --es play '\''test:2:255'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3262
+WaitTime: 3313
+Complete
++ sleep 7
++ shot au1_ar_dark_09_downloads
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ au ar reciters DARK test:2:255
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''reciters'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'' --es afollow 1 --es play '\''test:2:255'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3033
+WaitTime: 3036
+Complete
++ sleep 7
++ shot au1_ar_dark_10_reciters
++ sleep 2
++ dismiss
++ timeout 10 adb shell uiautomator dump /sdcard/d.xml
++ adb pull /sdcard/d.xml /tmp/d.xml
++ grep -q 'isn.t responding\|لا يستجيب' /tmp/d.xml
++ adb exec-out screencap -p
++ au ar player DARK ayah:2:255
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''player'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'' --es afollow 1 --es play '\''ayah:2:255'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3406
+WaitTime: 3443
+Complete
++ sleep 7
++ snap au1_ar_dark_11_stream_start
++ adb exec-out screencap -p
++ sleep 8
++ snap au1_ar_dark_12_stream_8s
++ adb exec-out screencap -p
++ msess 'real stream ayah:2:255 (+8s)'
+++ date -u +%T
++ echo '=== real stream ayah:2:255 (+8s) (01:35:23)'
++ adb shell dumpsys media_session
++ grep -iE 'package=|state=PlaybackState|metadata|description=|active='
++ adb shell svc wifi disable
++ adb shell svc data disable
++ sleep 2
++ au ar player DARK ayah:3:1
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell 'am start -W -n app.sakina.quran.debug/app.sakina.quran.MainActivity --es lang ar --es route '\''player'\'' --es theme CLASSIC_TEAL --es mode DARK --es glass FULL --es icons AUTO --es onboarded true --es qseed 1 --es qset '\''tajweed=0,paper=0,translit=0,tafsir=0,script=0,tr=auto'\'' --es afollow 1 --es play '\''ayah:3:1'\'''
+Starting: Intent { cmp=app.sakina.quran.debug/app.sakina.quran.MainActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.sakina.quran.debug/app.sakina.quran.MainActivity
+TotalTime: 3028
+WaitTime: 3136
+Complete
++ sleep 7
++ sleep 3
++ snap au1_ar_dark_13_offline_error
++ adb exec-out screencap -p
++ msess 'offline ayah:3:1'
+++ date -u +%T
++ echo '=== offline ayah:3:1 (01:35:39)'
++ adb shell dumpsys media_session
++ grep -iE 'package=|state=PlaybackState|metadata|description=|active='
++ adb shell svc wifi enable
++ adb shell svc data enable
++ adb shell am force-stop app.sakina.quran.debug
++ adb shell input keyevent HOME
++ sleep 2
++ adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] }
+Warning: Activity not started, intent has been delivered to currently running top-most instance.
+Status: ok
+LaunchState: UNKNOWN (0)
+Activity: com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+TotalTime: 0
+WaitTime: 5
+Complete
++ sleep 4
++ adb shell screencap -p /sdcard/home.png
++ adb pull /sdcard/home.png shots/au1_ar_dark_14_launcher_home.png
+/sdcard/home.png: 1 file pulled, 0 skipped. 78.0 MB/s (1378087 bytes in 0.017s)
++ '[' -s shots/au1_ar_dark_14_launcher_home.png ']'
++ adb shell input swipe 540 1900 540 400 400
++ sleep 3
++ snap au1_ar_dark_15_app_drawer
++ adb exec-out screencap -p
++ adb shell input keyevent HOME
++ crashdump
++ adb logcat -d -b crash
++ mv shots/crash.txt shots/crash_ar_dark.txt
++ adb logcat -d
++ grep -i 'sakina\|AndroidRuntime\|FATAL'
++ tail -300
++ echo 'SHOTS DONE ar_dark'
+SHOTS DONE ar_dark
++ exit 0

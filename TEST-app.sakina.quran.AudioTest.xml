@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.sakina.quran.AudioTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-10-17T01:22:39.054Z" hostname="runnervm8k3b6" time="0.323">
+  <properties/>
+  <testcase name="repeatWholeRange" classname="app.sakina.quran.AudioTest" time="0.021"/>
+  <testcase name="queueIsCapped" classname="app.sakina.quran.AudioTest" time="0.009"/>
+  <testcase name="infiniteRangeIsOnePass" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <testcase name="surahAyahFileList" classname="app.sakina.quran.AudioTest" time="0.174"/>
+  <testcase name="surahRangeCoerces" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <testcase name="juzBoundariesAndSurahs" classname="app.sakina.quran.AudioTest" time="0.067"/>
+  <testcase name="moshafNameParsing" classname="app.sakina.quran.AudioTest" time="0.001"/>
+  <testcase name="ayahAtBoundaries" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <testcase name="emptyRangeRejected" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <testcase name="parseMp3QuranJson" classname="app.sakina.quran.AudioTest" time="0.006"/>
+  <testcase name="singleAyahAndClamping" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <testcase name="plainRangeIsSequential" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <testcase name="voicesAndUrls" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <testcase name="ladderLoop" classname="app.sakina.quran.AudioTest" time="0.001"/>
+  <testcase name="startEndLookup" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <testcase name="repeatEachAyah" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <testcase name="formatBytes" classname="app.sakina.quran.AudioTest" time="0.01"/>
+  <testcase name="relPathsAndKeys" classname="app.sakina.quran.AudioTest" time="0.013"/>
+  <testcase name="compactRoundTrip" classname="app.sakina.quran.AudioTest" time="0.005"/>
+  <testcase name="sleepSpecRoundTripAndFade" classname="app.sakina.quran.AudioTest" time="0.006"/>
+  <testcase name="dlStateFraction" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <testcase name="mediaRefRoundTrip" classname="app.sakina.quran.AudioTest" time="0.005"/>
+  <testcase name="surahUrlPadsAndTrims" classname="app.sakina.quran.AudioTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

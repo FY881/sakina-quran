@@ -1,0 +1,84 @@
+=== test clip 2:255 (player) (01:33:09)
+    package=com.android.server.telecom
+    active=false
+    metadata: null
+      package=app.sakina.quran.debug
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=841, buffered position=3999, speed=1.0, updated=545492, actions=7340027, custom actions=[], active item id=2, error=null}
+      metadata: size=8, description=Al-Baqara • 2:257, Mishary Rashid Alafasy, Sakina — The Holy Quran
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=33334, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=33347, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=36709, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=36758, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.youtube
+      active=false
+      state=PlaybackState {state=NONE(0), position=0, buffered position=0, speed=1.0, updated=39477, actions=8192, custom actions=[], active item id=-1, error=null}
+      metadata: null
+      package=com.google.android.apps.youtube.music
+      active=false
+      state=PlaybackState {state=NONE(0), position=0, buffered position=0, speed=1.0, updated=45794, actions=11828, custom actions=[], active item id=-1, error=null}
+      metadata: null
+=== real stream ayah:2:255 (+8s) (01:35:21)
+    package=com.android.server.telecom
+    active=false
+    metadata: null
+      package=app.sakina.quran.debug
+      active=true
+      state=PlaybackState {state=PLAYING(3), position=11097, buffered position=51917, speed=1.0, updated=676673, actions=7340027, custom actions=[], active item id=0, error=null}
+      metadata: size=8, description=Al-Baqara • 2:255, Mishary Rashid Alafasy, Sakina — The Holy Quran
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=33334, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=33347, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=36709, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=36758, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.youtube
+      active=false
+      state=PlaybackState {state=NONE(0), position=0, buffered position=0, speed=1.0, updated=39477, actions=8192, custom actions=[], active item id=-1, error=null}
+      metadata: null
+=== offline ayah:3:1 (01:35:37)
+    package=com.android.server.telecom
+    active=false
+    metadata: null
+      package=app.sakina.quran.debug
+      active=true
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=689213, actions=7339701, custom actions=[], active item id=0, error=Source error}
+      metadata: size=8, description=Aal-i-Imraan • 3:1, Mishary Rashid Alafasy, Sakina — The Holy Quran
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=33334, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=33347, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=36709, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
+      package=com.google.android.bluetooth
+      active=false
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=36758, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      metadata: null
