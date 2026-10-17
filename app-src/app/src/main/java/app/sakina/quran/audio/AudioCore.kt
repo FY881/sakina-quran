@@ -22,11 +22,11 @@ object AyahVoices {
     val ALL = listOf(
         AyahVoice("ar.alafasy", "مشاري راشد العفاسي", "Mishary Rashid Alafasy", 128, 64, AyahVoice.Style.MURATTAL),
         AyahVoice("ar.husary", "محمود خليل الحصري", "Mahmoud Khalil Al-Husary", 128, 64, AyahVoice.Style.MURATTAL),
-        AyahVoice("ar.husarymujawwad", "محمود خليل الحصري (مجوّد)", "Al-Husary (Mujawwad)", 128, 64, AyahVoice.Style.MUJAWWAD),
+        AyahVoice("ar.husarymujawwad", "محمود خليل الحصري (مجوّد)", "Mahmoud Khalil Al-Husary (Mujawwad)", 128, 64, AyahVoice.Style.MUJAWWAD),
         AyahVoice("ar.minshawi", "محمد صديق المنشاوي", "Mohamed Siddiq Al-Minshawi", 128, 128, AyahVoice.Style.MURATTAL),
-        AyahVoice("ar.minshawimujawwad", "المنشاوي (مجوّد)", "Al-Minshawi (Mujawwad)", 64, 64, AyahVoice.Style.MUJAWWAD),
-        AyahVoice("ar.abdulbasitmurattal", "عبد الباسط عبد الصمد (مرتّل)", "Abdul Basit (Murattal)", 192, 64, AyahVoice.Style.MURATTAL),
-        AyahVoice("ar.abdulsamad", "عبد الباسط عبد الصمد (مجوّد)", "Abdul Basit (Mujawwad)", 64, 64, AyahVoice.Style.MUJAWWAD),
+        AyahVoice("ar.minshawimujawwad", "محمد صديق المنشاوي (مجوّد)", "Mohamed Siddiq Al-Minshawi (Mujawwad)", 64, 64, AyahVoice.Style.MUJAWWAD),
+        AyahVoice("ar.abdulbasitmurattal", "عبد الباسط عبد الصمد (مرتّل)", "Abdul Basit Abdul Samad (Murattal)", 192, 64, AyahVoice.Style.MURATTAL),
+        AyahVoice("ar.abdulsamad", "عبد الباسط عبد الصمد (مجوّد)", "Abdul Basit Abdul Samad (Mujawwad)", 64, 64, AyahVoice.Style.MUJAWWAD),
         AyahVoice("ar.mahermuaiqly", "ماهر المعيقلي", "Maher Al-Muaiqly", 128, 64, AyahVoice.Style.MURATTAL),
         AyahVoice("ar.abdurrahmaansudais", "عبد الرحمن السديس", "Abdurrahmaan As-Sudais", 192, 64, AyahVoice.Style.MURATTAL),
         AyahVoice("ar.saoodshuraym", "سعود الشريم", "Saood Ash-Shuraym", 64, 64, AyahVoice.Style.MURATTAL),
@@ -37,7 +37,7 @@ object AyahVoices {
         AyahVoice("ar.muhammadjibreel", "محمد جبريل", "Muhammad Jibreel", 128, 128, AyahVoice.Style.MURATTAL),
         AyahVoice("ar.abdullahbasfar", "عبد الله بصفر", "Abdullah Basfar", 192, 64, AyahVoice.Style.MURATTAL),
         AyahVoice("ar.hanirifai", "هاني الرفاعي", "Hani Ar-Rifai", 192, 64, AyahVoice.Style.MURATTAL),
-        AyahVoice("ar.aymanswoaid", "أيمن سويد (تعليمي)", "Ayman Swoaid (teaching)", 64, 64, AyahVoice.Style.MUALLIM),
+        AyahVoice("ar.aymanswoaid", "أيمن رشدي سويد (تعليمي)", "Ayman Rushdi Swaid (Teaching)", 64, 64, AyahVoice.Style.MUALLIM),
     )
     fun byId(id: String): AyahVoice = ALL.firstOrNull { it.id == id } ?: ALL.first()
 }
