@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
@@ -233,10 +234,10 @@ fun VSpace(h: Dp) = Spacer(Modifier.height(h))
 
 /** Screen header for pushed screens: back arrow, title (+ optional subtitle) and trailing actions. */
 @Composable
-fun BackHeader(title: String, onBack: () -> Unit, subtitle: String? = null, trailing: (@Composable RowScope.() -> Unit)? = null) {
+fun BackHeader(title: String, onBack: () -> Unit, subtitle: String? = null, modifier: Modifier = Modifier, trailing: (@Composable RowScope.() -> Unit)? = null) {
     val l = LocalSakina.current.look
     Row(
-        Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(start = 4.dp, end = 10.dp, top = 4.dp, bottom = 4.dp),
+        modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(start = 4.dp, end = 10.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         androidx.compose.material3.IconButton(onClick = onBack) {
@@ -248,4 +249,13 @@ fun BackHeader(title: String, onBack: () -> Unit, subtitle: String? = null, trai
         }
         trailing?.invoke(this)
     }
+}
+
+
+/** Lets a full-width row (e.g. [BackHeader]) ignore a parent's horizontal content padding, so headers line up across screens. */
+fun Modifier.bleedH(by: androidx.compose.ui.unit.Dp): Modifier = this.layout { m, c ->
+    val px = by.roundToPx()
+    val w = if (c.hasBoundedWidth) c.maxWidth + 2 * px else c.maxWidth
+    val p = m.measure(c.copy(minWidth = w, maxWidth = w))
+    layout(c.maxWidth, p.height) { p.place(-px, 0) }
 }
