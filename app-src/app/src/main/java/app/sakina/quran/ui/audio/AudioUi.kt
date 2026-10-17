@@ -204,7 +204,8 @@ fun ContinueListeningCard(q: Quran, onOpen: (String) -> Unit) {
     val ar = isArabic()
     val look = LocalSakina.current.look
     val l = last
-    if (!st.active && l == null) return
+    // AU1: while a session exists the mini player already shows it; this card is only for resuming afterwards.
+    if (st.active || l == null) return
     SCard(onClick = { if (st.active) onOpen("player") else if (l != null) { Recitation.resume(ctx, q, l, ar); onOpen("player") } }, padding = PaddingValues(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(46.dp).clip(CircleShape).background(look.cta.copy(alpha = .16f)), contentAlignment = Alignment.Center) {
