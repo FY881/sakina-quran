@@ -217,4 +217,29 @@ class AudioTest {
         assertEquals(0.25f, DlState.Running(1, 4, 100).fraction, 1e-6f)
         assertEquals(0f, DlState.Running(0, 0, 0).fraction, 0f)
     }
+
+    @Test fun arabicPluralFiles() {
+        assertEquals("ملف واحد", app.sakina.quran.ui.audio.filesAr(1))
+        assertEquals("ملفان", app.sakina.quran.ui.audio.filesAr(2))
+        assertEquals("ملفين", app.sakina.quran.ui.audio.filesAr(2, afterMin = true))
+        assertEquals("٣ ملفات", app.sakina.quran.ui.audio.filesAr(3))
+        assertEquals("٧ ملفات", app.sakina.quran.ui.audio.filesAr(7))
+        assertEquals("١٠ ملفات", app.sakina.quran.ui.audio.filesAr(10))
+        assertEquals("١١ ملفًا", app.sakina.quran.ui.audio.filesAr(11))
+        assertEquals("٢٨٦ ملفًا", app.sakina.quran.ui.audio.filesAr(286))
+        assertEquals("١٠٠ ملف", app.sakina.quran.ui.audio.filesAr(100))
+        assertEquals("١٠٣ ملفات", app.sakina.quran.ui.audio.filesAr(103))
+        assertEquals("6236 files", app.sakina.quran.ui.audio.filesEn(6236))
+        assertEquals("1 file", app.sakina.quran.ui.audio.filesEn(1))
+    }
+
+    @Test fun arabicPluralMinutesAndSpeed() {
+        assertEquals("دقيقة واحدة", app.sakina.quran.ui.audio.minutesAr(1))
+        assertEquals("دقيقتان", app.sakina.quran.ui.audio.minutesAr(2))
+        assertEquals("٥ دقائق", app.sakina.quran.ui.audio.minutesAr(5))
+        assertEquals("١٥ دقيقة", app.sakina.quran.ui.audio.minutesAr(15))
+        assertEquals("×١\u066B٥", app.sakina.quran.ui.audio.speedLabel(1.5f, true))
+        assertFalse(app.sakina.quran.ui.audio.speedLabel(1.25f, true).contains(','))
+        assertEquals("1.5×", app.sakina.quran.ui.audio.speedLabel(1.5f, false))
+    }
 }
