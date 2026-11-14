@@ -298,16 +298,22 @@ private fun MushafPage(q: Quran, page: Int, prefs: ReaderPrefs, simple: Array<St
                                 if (b <= a) continue
                                 val xa = if (a == ls) l.getLineRight(line) else l.getHorizontalPosition(a, usePrimaryDirection = true)
                                 val xb = if (b >= le) l.getLineLeft(line) else l.getHorizontalPosition(b, usePrimaryDirection = true)
-                                val pad = if (h.playing) 4f else 1f
-                                val left = minOf(xa, xb) - pad; val right = maxOf(xa, xb) + pad
+                                // Playing box (AU1 QA): ~3dp more air at the glyph ends and extended up ~5dp to take in
+                                // the stop marks (صلے، قلے، ج) above the line; clamped to the line box and page width so it
+                                // never meets the next line's box, and the outline is drawn inset by half its stroke.
+                                val pad = if (h.playing) 4f + 3.dp.toPx() else 1f
+                                val left = (minOf(xa, xb) - pad).coerceAtLeast(0f); val right = (maxOf(xa, xb) + pad).coerceAtMost(size.width)
                                 val top = l.getLineTop(line); val bottom = l.getLineBottom(line); val lh = bottom - top
-                                val t0 = top + lh * (if (h.playing) .10f else .16f); val b0 = bottom - lh * (if (h.playing) .06f else .12f)
+                                val t0 = if (h.playing) maxOf(top + 1f, top + lh * .10f - 5.dp.toPx()) else top + lh * .16f
+                                val b0 = bottom - lh * (if (h.playing) .06f else .12f)
                                 val r = CornerRadius(lh * .22f, lh * .22f)
                                 val fill = h.color.copy(alpha = when { h.playing -> if (paper.dark) .38f else .28f; h.selected -> if (paper.dark) .16f else .20f; else -> if (paper.dark) .14f else .20f })
-                                drawRoundRect(fill, Offset(left.coerceAtLeast(0f), t0), Size((right - left).coerceAtMost(size.width), b0 - t0), r)
+                                drawRoundRect(fill, Offset(left, t0), Size(right - left, b0 - t0), r)
+                                val sw = when { h.playing -> 5f; h.selected -> 2.4f; else -> 1.2f }
+                                val ins = sw / 2f
                                 drawRoundRect(
-                                    h.color.copy(alpha = when { h.playing -> 1f; h.selected -> .75f; else -> .40f }), Offset(left.coerceAtLeast(0f), t0), Size((right - left).coerceAtMost(size.width), b0 - t0), r,
-                                    style = Stroke(width = when { h.playing -> 5f; h.selected -> 2.4f; else -> 1.2f }),
+                                    h.color.copy(alpha = when { h.playing -> 1f; h.selected -> .75f; else -> .40f }), Offset(left + ins, t0 + ins), Size((right - left - sw).coerceAtLeast(0f), (b0 - t0 - sw).coerceAtLeast(0f)), r,
+                                    style = Stroke(width = sw),
                                 )
                             }
                         }
