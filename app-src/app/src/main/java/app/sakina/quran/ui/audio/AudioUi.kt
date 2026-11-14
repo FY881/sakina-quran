@@ -30,6 +30,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -103,12 +104,7 @@ fun speedLabel(s: Float, ar: Boolean): String {
 }
 
 /** Arabic count of minutes with the right plural: ٥ دقائق، ١٠ دقائق، ١٥ دقيقة. */
-fun minutesAr(m: Int): String = when {
-    m == 1 -> "دقيقة واحدة"
-    m == 2 -> "دقيقتان"
-    m in 3..10 -> "${num(m, true)} دقائق"
-    else -> "${num(m, true)} دقيقة"
-}
+fun minutesAr(m: Int): String = pluralAr(m, "دقيقة واحدة", "دقيقتان", "دقائق", "دقيقة", "دقيقة")
 
 /** Warning icon colour with ≥ 4.5:1 contrast on [bg] (the pale light-theme warn tone is never used as a foreground). */
 fun warnIconOn(bg: Color): Color =
@@ -239,7 +235,7 @@ private fun repeatLabel(r: RepeatSpec, ar: Boolean): String = when {
     else -> buildList {
         if (r.ayahTimes > 1) add(t2(ar, "الآية ", "Ayah ") + timesLabel(r.ayahTimes, ar))
         if (r.infinite) add(if (ar) "المقطع ∞" else "Range ∞") else if (r.rangeTimes > 1) add(t2(ar, "المقطع ", "Range ") + timesLabel(r.rangeTimes, ar))
-        if (r.gapMs > 0) add(if (ar) "توقف ${num((r.gapMs / 1000).toInt(), true)}ث" else "${r.gapMs / 1000}s gap")
+        if (r.gapMs > 0) add(if (ar) "توقّف ${num((r.gapMs / 1000).toInt(), true)} ث" else "${r.gapMs / 1000} s gap")
         if (r.ladder) add(if (ar) "تدرّج" else "Ladder")
     }.joinToString(" • ")
 }
@@ -291,10 +287,15 @@ fun PlayerScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
             return@Column
         }
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-            val dockMax = maxHeight * 0.68f
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            var recH by remember { mutableStateOf(96.dp) }
+            var footH by remember { mutableStateOf(36.dp) }
+            // The ayah card always keeps ≥ 120dp (one Quran line + padding); the dock scrolls itself instead.
+            val cardMin = 120.dp
+            val dockMax = minOf(maxHeight * 0.68f, (maxHeight - recH - cardMin - footH - 30.dp)).coerceAtLeast(96.dp)
             Column(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 // Reciter card
-                SCard(padding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)) {
+                SCard(Modifier.onSizeChanged { recH = with(density) { it.height.toDp() } }, padding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         PackIcon(Ico.RECITERS, 40.dp)
                         Spacer(Modifier.width(12.dp))
@@ -306,21 +307,25 @@ fun PlayerScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                                 val (bg, fg) = app.sakina.quran.ui.theme.badgeColors(look.cta, look.card, dark = look.dark)
                                 Badge(if (st.mode == AudioMode.AYAH) t("آية بآية", "Ayah by ayah") else t("السورة كاملة", "Whole surah"), bg, fg)
                                 if (st.mode == AudioMode.AYAH || st.timing) Badge(t("تظليل متزامن", "Synced highlight"), bg, fg)
-                                Badge(if (st.local) t("من الجهاز", "On device") else t("بثّ", "Streaming"), bg, fg)
+                                val netDown = !st.local && (st.error == AudioErr.OFFLINE || st.error == AudioErr.NETWORK)
+                                Badge(if (st.local) t("من الجهاز", "On device") else if (netDown) t("غير متصل", "Offline") else t("بثّ", "Streaming"), bg, fg)
                             }
                         }
                     }
                 }
                 // Now reciting: takes the remaining height, scrolls inside (long ayat such as Ayat al-Kursi).
-                SCard(Modifier.weight(1f), strong = true, padding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) {
+                SCard(Modifier.weight(1f).heightIn(min = cardMin), strong = true, padding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) {
                     val su = q.suras.getOrNull(st.sura - 1)
                     val textScroll = rememberScrollState()
                     LaunchedEffect(st.sura, st.ayah) { textScroll.scrollTo(0) }
                     BoxWithConstraints(Modifier.fillMaxSize()) {
                         val viewH = maxHeight
-                        Column(Modifier.fillMaxSize().fadeEdges(textScroll).verticalScroll(textScroll)) {
+                        val overflows = textScroll.maxValue > 0
+                        Column(Modifier.fillMaxSize().then(if (overflows) Modifier.fadeEdges(textScroll) else Modifier).verticalScroll(textScroll)) {
+                            // Bottom padding reserves the scroll-hint pill's strip so it never sits over Quran glyphs;
+                            // short ayat stay centred in the space above it and never overflow.
                             Column(
-                                Modifier.fillMaxWidth().heightIn(min = viewH),
+                                Modifier.fillMaxWidth().heightIn(min = viewH).padding(bottom = 26.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
                             ) {
                                 Text(if (su != null) "سورة ${su.name}" else "", fontFamily = QuranFont, fontSize = 28.sp, lineHeight = 48.sp, color = look.onCard, textAlign = TextAlign.Center)
@@ -341,15 +346,16 @@ fun PlayerScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                             }
                         }
                         // Scroll hint while more of the ayah is below.
-                        if (textScroll.canScrollForward) Icon(
-                            Icons.Outlined.KeyboardArrowDown, t("مرّر لبقية الآية", "Scroll for the rest of the ayah"),
-                            tint = look.onCardMuted, modifier = Modifier.align(Alignment.BottomCenter).size(22.dp),
-                        )
+                        if (overflows && textScroll.canScrollForward) Box(
+                            Modifier.align(Alignment.BottomCenter).clip(CircleShape).background(look.card).padding(horizontal = 10.dp, vertical = 1.dp),
+                        ) {
+                            Icon(Icons.Outlined.KeyboardArrowDown, t("مرّر لبقية الآية", "Scroll for the rest of the ayah"), tint = look.onCardMuted, modifier = Modifier.size(22.dp))
+                        }
                     }
                 }
                 // Control dock: always visible; scrolls itself only on very short screens.
                 Column(
-                    Modifier.fillMaxWidth().heightIn(max = dockMax).verticalScroll(rememberScrollState()).padding(bottom = 8.dp),
+                    Modifier.fillMaxWidth().heightIn(max = dockMax).verticalScroll(rememberScrollState()).padding(bottom = 2.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     st.error?.let { e ->
@@ -408,12 +414,14 @@ fun PlayerScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                         Chip(t("القرّاء", "Reciters"), leading = { Icon(Icons.Outlined.Headphones, null, Modifier.size(18.dp)) }, onClick = { onOpen("reciters") })
                         Chip(t("إيقاف التلاوة", "Stop"), leading = { Icon(Icons.Outlined.Close, null, Modifier.size(18.dp)) }, onClick = { Recitation.stop(ctx); onBack() })
                     }
-                    Muted(
-                        if (st.mode == AudioMode.AYAH) t("الصوت: Islamic Network (cdn.islamic.network) — مجاني للاستخدام غير التجاري.", "Audio: Islamic Network (cdn.islamic.network) — free for non-commercial use.")
-                        else t("الصوت وتوقيت الآيات: mp3quran.net.", "Audio and ayah timings: mp3quran.net."),
-                        Modifier.fillMaxWidth().navigationBarsPadding(),
-                    )
                 }
+                // Attribution: outside the scrolling dock so it is always fully visible above the gesture bar
+                // (the screen column already applies navigationBarsPadding).
+                Muted(
+                    if (st.mode == AudioMode.AYAH) t("الصوت: Islamic Network (cdn.islamic.network) — مجاني للاستخدام غير التجاري.", "Audio: Islamic Network (cdn.islamic.network) — free for non-commercial use.")
+                    else t("الصوت وتوقيت الآيات: mp3quran.net.", "Audio and ayah timings: mp3quran.net."),
+                    Modifier.fillMaxWidth().padding(bottom = 6.dp).onSizeChanged { footH = with(density) { it.height.toDp() } },
+                )
             }
         }
     }
@@ -501,7 +509,7 @@ fun RepeatSheet(q: Quran, st: AudioUiState, onDismiss: () -> Unit) {
                 if (!lastUsed.isPlain && lastUsed != r) Chip(t("آخر إعداد: ", "Last used: ") + repeatLabel(lastUsed, ar), onClick = { r = lastUsed })
                 Chip(t("حفظ: ×٣ مع توقف", "Memorise: ×3 + pause"), selected = r == RepeatSpec(3, 1, 2000), onClick = { r = RepeatSpec(3, 1, 2000) })
                 Chip(t("مراجعة: المقطع ×٣", "Review: range ×3"), selected = r == RepeatSpec(1, 3, 0), onClick = { r = RepeatSpec(1, 3, 0) })
-                Chip(t("تلقين: ×٥ وتوقف ٥ث", "Talqin: ×5 + 5 s"), selected = r == RepeatSpec(5, 1, 5000), onClick = { r = RepeatSpec(5, 1, 5000) })
+                Chip(t("تلقين: ×٥ وتوقّف ٥ ث", "Talqin: ×5 + 5 s"), selected = r == RepeatSpec(5, 1, 5000), onClick = { r = RepeatSpec(5, 1, 5000) })
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CtaPill(t("تطبيق", "Apply"), enabled = canLoop || r.isPlain) { Recitation.setRepeat(ctx, q, r, fromA, toA); onDismiss() }
@@ -558,10 +566,9 @@ fun SpeedSheet(st: AudioUiState, onDismiss: () -> Unit) {
             Muted(t("تتغير السرعة مع بقاء طبقة صوت القارئ كما هي.", "Speed changes while the reciter's pitch stays natural."))
             // Balanced rows (4 + 3) so the last speed never sits alone on its own line.
             val perRow = (SPEEDS.size + 1) / 2
-            SPEEDS.chunked(perRow).forEach { row ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                    row.forEach { s -> Chip(speedLabel(s, ar), selected = st.speed == s, onClick = { Recitation.setSpeed(ctx, s); onDismiss() }) }
-                }
+            // Start-aligned like the repeat / sleep sheets.
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), maxItemsInEachRow = perRow) {
+                SPEEDS.forEach { s -> Chip(speedLabel(s, ar), selected = st.speed == s, onClick = { Recitation.setSpeed(ctx, s); onDismiss() }) }
             }
         }
     }
