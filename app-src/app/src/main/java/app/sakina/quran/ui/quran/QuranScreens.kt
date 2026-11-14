@@ -323,7 +323,11 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
                 val s = quran?.suras?.getOrNull(sura - 1)
                 Text(if (s == null) "" else if (ar) "سورة ${s.name}" else s.tname, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
                 if (quran != null && s != null) {
-                    val first = (list.firstVisibleItemIndex).coerceIn(1, s.ayas)
+                    // While an ayah of this surah is playing and on screen, the header follows it (not the top row).
+                    val hdrPlaying = rememberPlayingAyah(quran)
+                    val hdrPa = hdrPlaying?.let { g -> quran.fromGlobal(g).let { (ps, pa) -> if (ps == sura) pa else null } }
+                    val hdrPaShown by remember(hdrPa) { androidx.compose.runtime.derivedStateOf { hdrPa != null && list.layoutInfo.visibleItemsInfo.any { it.index == hdrPa } } }
+                    val first = (if (hdrPa != null && hdrPaShown) hdrPa else list.firstVisibleItemIndex).coerceIn(1, s.ayas)
                     Muted(t("الصفحة ${num(quran.page(sura, first), true)} • الجزء ${num(quran.juz(sura, first), true)}", "Page ${quran.page(sura, first)} • Juz ${quran.juz(sura, first)}"))
                 }
             }
@@ -363,7 +367,7 @@ fun QuranReader(sura: Int, startAyah: Int, user: UserData, onBack: () -> Unit, o
                     if (ps == sura) {
                         val info = list.layoutInfo
                         val vi = info.visibleItemsInfo.firstOrNull { v -> v.index == pa }
-                        val shown = vi != null && vi.offset >= info.viewportStartOffset && vi.offset + vi.size <= info.viewportEndOffset
+                        val shown = vi != null && vi.offset >= info.viewportStartOffset && vi.offset + vi.size <= info.viewportEndOffset - info.afterContentPadding
                         val partlyTall = vi != null && vi.size > (info.viewportEndOffset - info.viewportStartOffset) && vi.offset <= info.viewportStartOffset + 4
                         if (!shown && !partlyTall) runCatching { list.animateScrollToItem(pa.coerceIn(1, s.ayas), -24) }
                     }
