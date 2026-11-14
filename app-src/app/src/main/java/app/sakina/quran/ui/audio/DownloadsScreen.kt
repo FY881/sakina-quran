@@ -206,8 +206,8 @@ private fun UnitRow(q: Quran, u: DlUnit, st: DlState?, have: Pair<Int, Int>?, ar
                     st is DlState.Failed -> t("تعذّر التحميل، ستُعاد المحاولة", "Download failed; will retry")
                     complete -> t("محمّل على الجهاز", "On device")
                     total == 0 -> t("غير متاح لهذا القارئ", "Not available for this reciter")
-                    present > 0 -> t("${num(present, true)} من ${num(total, true)} ملف", "$present of $total files")
-                    else -> t("${num(total, true)} ملف", "$total files")
+                    present > 0 -> t("${num(present, true)} من ${filesAr(total, afterMin = true)}", "$present of ${filesEn(total)}")
+                    else -> t(filesAr(total), filesEn(total))
                 }
                 Muted(sub)
             }
