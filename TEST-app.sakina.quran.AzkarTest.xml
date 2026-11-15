@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.sakina.quran.AzkarTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-14T23:47:08.321Z" hostname="runnervmccnms" time="0.131">
+  <properties/>
+  <testcase name="hisnComplete" classname="app.sakina.quran.AzkarTest" time="0.028"/>
+  <testcase name="searchIsDiacriticInsensitive" classname="app.sakina.quran.AzkarTest" time="0.027"/>
+  <testcase name="labelsAndStages" classname="app.sakina.quran.AzkarTest" time="0.006"/>
+  <testcase name="azkarRemindersFollowPrayerTimes" classname="app.sakina.quran.AzkarTest" time="0.024"/>
+  <testcase name="audioOnlyFromCleared" classname="app.sakina.quran.AzkarTest" time="0.006"/>
+  <testcase name="sessionsResolve" classname="app.sakina.quran.AzkarTest" time="0.008"/>
+  <testcase name="openRoutesPointInsideSessions" classname="app.sakina.quran.AzkarTest" time="0.008"/>
+  <testcase name="azkarStreakCountsMorningOrEvening" classname="app.sakina.quran.AzkarTest" time="0.004"/>
+  <testcase name="quizIsWellFormed" classname="app.sakina.quran.AzkarTest" time="0.011"/>
+  <testcase name="everyChapterHasExactlyOneCategory" classname="app.sakina.quran.AzkarTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

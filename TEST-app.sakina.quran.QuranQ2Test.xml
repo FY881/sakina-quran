@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.sakina.quran.QuranQ2Test" tests="21" skipped="0" failures="0" errors="0" timestamp="2026-11-14T23:47:08.488Z" hostname="runnervmccnms" time="0.628">
+  <properties/>
+  <testcase name="mushafPagesCoverEveryAyahOnce" classname="app.sakina.quran.QuranQ2Test" time="0.054"/>
+  <testcase name="bundledEditionsAreVerbatimAndComplete" classname="app.sakina.quran.QuranQ2Test" time="0.125"/>
+  <testcase name="tajweedSpansAreSaneForWholeQuran" classname="app.sakina.quran.QuranQ2Test" time="0.12"/>
+  <testcase name="uthmaniIsVerbatimTanzil" classname="app.sakina.quran.QuranQ2Test" time="0.015"/>
+  <testcase name="readingStats" classname="app.sakina.quran.QuranQ2Test" time="0.012"/>
+  <testcase name="wirdAlarmNextTime" classname="app.sakina.quran.QuranQ2Test" time="0.001"/>
+  <testcase name="translationSearch" classname="app.sakina.quran.QuranQ2Test" time="0.127"/>
+  <testcase name="translitTags" classname="app.sakina.quran.QuranQ2Test" time="0.002"/>
+  <testcase name="khatmaPlanAndRebalance" classname="app.sakina.quran.QuranQ2Test" time="0.001"/>
+  <testcase name="khatmaJsonRoundTrip" classname="app.sakina.quran.QuranQ2Test" time="0.005"/>
+  <testcase name="topicsAreValid" classname="app.sakina.quran.QuranQ2Test" time="0.036"/>
+  <testcase name="basmalaShownAsBlockNotDuplicated" classname="app.sakina.quran.QuranQ2Test" time="0.016"/>
+  <testcase name="waqfMarksStayWithTheirWord" classname="app.sakina.quran.QuranQ2Test" time="0.023"/>
+  <testcase name="simpleScriptIsVerbatimTanzil" classname="app.sakina.quran.QuranQ2Test" time="0.026"/>
+  <testcase name="khatmaHelpers" classname="app.sakina.quran.QuranQ2Test" time="0.0"/>
+  <testcase name="challengePagesMatchMushaf" classname="app.sakina.quran.QuranQ2Test" time="0.014"/>
+  <testcase name="tajweedKnownRules" classname="app.sakina.quran.QuranQ2Test" time="0.01"/>
+  <testcase name="arabicDigitsInReferences" classname="app.sakina.quran.QuranQ2Test" time="0.0"/>
+  <testcase name="recitersCatalogue" classname="app.sakina.quran.QuranQ2Test" time="0.018"/>
+  <testcase name="alQuranCloudConversion" classname="app.sakina.quran.QuranQ2Test" time="0.009"/>
+  <testcase name="surahInfoComplete" classname="app.sakina.quran.QuranQ2Test" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
